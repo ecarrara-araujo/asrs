@@ -1,0 +1,31 @@
+Version 4.1:
+
+1. Chaged "TimeroutStart" -> "TimerStart"
+2. New method "TimerStop"
+3. Introduced software interuption in TimerStart into statePlan 14
+4. Energy consumption changed: when a robot moves it consumes more energy (factor 10)
+5. New constant ENERGY_CONSUMPTION_PER_TURN
+6. Energetic deatch of robots: death robots are white, critical energy robots - red
+7. S2Value is introduced
+8. statusPlan15 is introduced 
+
+Version 5.0:
+
+1. Escape of the robot in corners improved.
+2. New class for lights. Now it is possible to add several lights. Each light produces between 0 to 100 "light units". 
+   Each robot can receive light from different lights. All contributions are added.
+3. Light sensor is an Abstract class instead of Mobile class. It improves the global execution velocity.
+4. Communication range has been improved.
+5. GetColor method for getting the color of the nearest object.
+6. Documentation updated.
+
+Version 6.0:
+
+1. Communication protocol revised and updated.
+2. Changes of BIOS v.4 have been implemented.
+3. Documentation updated.
+
+Version 7.0:
+
+1. Removed all thing which are not used in the simulation in order to get a faster simulator. These things are 
+   unused sensors, models, etc.

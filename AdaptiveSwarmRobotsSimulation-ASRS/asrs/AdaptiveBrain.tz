@@ -1,0 +1,36 @@
+###############################################################################    
+# Class: AdaptiveBrain
+# Tarefas: Comunicação com o plugin de automato adaptativo e gerenciamento da
+#          base de conhecimento.
+# Date Created: 20.09.2008
+###############################################################################
+@plugin "libAdaptiveBrainPlugIn.dll" (AdaptiveBrainLoadFunctions).
+
+Object : AdaptiveBrain {
+  
+  + variables:
+    brainPointer (pointer).
+    iRobotPlan (int).
+  
+  ###############################################################################    
+  # Function: init-with-db
+  # Tarefas: Solicita a criação da base de conhecimento e inicialização do 
+  #          automato. Recebe o id do robo como parametro, monta um nome para a 
+  #          base e comunica-se com o plugin através da função BrainMakeClass.
+  # Date Created: 20.09.2008
+  ###############################################################################
+  + to init-with-db robotId MyID(int):
+    brainPointer = AdapBrainMakeClass(MyID).
+  
+  ###############################################################################    
+  # Function: get-robot-plan
+  # Tarefas: Solicita um plano a ser executado pelo robô ao cerebro adaptativo.
+  #          Utiliza como parametros possiveis mensagens recebidas pelo robô e 
+  #          informacoes de registradores (como direcao atual, objeto encontrado etc).
+  # Date Created: 20.09.2008
+  ###############################################################################
+  + to get-robot-plan ReceivedMessage recMsg(string) InformationRegisters infoReg(string):
+    iRobotPlan = AdapBrainGetRobotPlan(brainPointer, recMsg, infoReg).
+    return iRobotPlan.
+    
+}

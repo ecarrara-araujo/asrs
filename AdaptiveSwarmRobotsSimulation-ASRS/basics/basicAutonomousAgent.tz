@@ -1,0 +1,862 @@
+@use Mobile.
+@use Link.
+@use Drawing.
+@include "basics/basicAutonomousOperations.tz"
+
+#Constants for the predifined messages. 
+@define MSG_ACK "ACK00ACK".
+
+Mobile : basicAutonomousAgent {
+	  + variables :
+                #Internal variables for Simulation implementation
+                draw(object).
+                exec(object).
+		shapee(object).
+                sensorsList(list).
+                sensorChannel(object).
+                sensor_i(object).
+                color(vector).
+                i(int).
+                distanceNeighbor(double).
+                shortestDistanceNeighbor(double).
+                detectedNeighbors(list).
+                nearestNeighbor(object).
+                detectedNeighbor(object).
+                mat_rot_r(matrix).
+                mat_rot_rr(matrix).
+                mat_rot_l(matrix).
+                mat_rot_ll(matrix).
+                angle_turn(double).
+                angle_turn2(double).
+                distanceObstacle(double).
+                shortestDistanceObstacle(double).
+                detectedObstacle(object).
+                detectedObjects(list).
+                messagesList(list).
+                farDistanceProximitySensor(double).       
+                farDistanceBeamerSensor(int).       
+                closeDistance(int).     
+                myLastReceiver(object).
+                ir_channel(int).
+                enableRequest(list).
+                establishedChannel(int).
+                initial_i(int).
+                farObstacleThreshold(int).
+                nearObstacleThreshold(int).
+                TWIRotateFlag(int).
+                turningFlag(int).
+                movingFlag(int).
+                messageReceived(int).
+                velocityRobot(int).
+                delayActive(int).
+                timerInterruptionAllowed(int).
+                n,nn, nMax, nnMax(int).
+                ADCValue(int).
+                TWISendCommand(20 ints).
+                isStart(int).
+                                
+                ############################################
+                # Variables for getting useful info for user
+                ############################################
+                myID(int).
+                statusMain(string).     #contains the main status of the robot 
+                                        #0 bit- RC flag:        0 - autonome mode;     1 - manual mode via remote control   	
+                                        #1 bit- Obstacle flag:  0 - no obstacles;      1 - obstacle on the way   
+                                        #2 bit- Motion flag:    0 - no current motion; 1 - I'm moving now 	
+                                        #3 bit- Direction flag: 0 - motion forwards;   1 - motion backwards
+                                        #4 bit: Critical collision flag 0 - there is still open 1 - no more motion 	
+                                        #5 bit: read proximity: 0 - don't read;          1 - read 
+                                        #6 bit: TWI synchronization flag: 0 - slave' last activity not finished; 1 - finished 	
+                                        #7 bit: receiving bit:  0 - don't receive(don't listen) anything; 1 - listen for incoming messages  
+														
+                statusComm1(2 ints).     #this register contains status of send communication
+                                         #statusComm1[0] represents how many times an output message has to be sent; 64 times max
+                                         #statusComm1[1] channel that receives the message  
+                                        
+                statusComm2(string).     #this register contains status of receiving communication
+                                         #bits 0-6: channels that should send the message	
+                                         #bit 7: value 0 - no new input messages; Value 1 - there is a new input message
+
+                behavioralRole(int).            #Value 0: normal, Value 1: scout, Value 2: leader
+                localSensors(7 doubles).        #Array with sensors data for motion.
+                localSensorsComm(7 doubles).    #Array with sensors data for communications.
+                receivMessage1(string).         #contains the 1 word of message obtained via communication
+                receivMessage2(string).         #contains the 2 word of message obtained via communication
+                sendMessage1(string).           #contains the 1 word of message to be sent
+                sendMessage2(string).           #contains the 2 word of message to be sent
+                S1Value(double).	        #Contains the value detected by the S1 (left-light) sensor.
+                S2Value(double).	        #Contains the value detected by the S2 (right-light) sensor.
+                send16(int).                    #send 8 (=0),12(=1) or 16(=2) bit 
+                receive16(int).                 #receive 8 (=0),12(=1) or 16(=2) bit 
+                statusPlan(int).                #Variable for executePlan
+                statusPlanLast(int).            #Variable for storing the lastPlan executed.
+                avoiding(int).                  #This contains rotation for collision avoiding: small - fine avoiding, 
+                                                #large: - random motion 
+                energyValue(double).            #This contains the value of the energy.
+                TimeoutReached(int).             #This contains the status of the Timeout.
+                                                #Value 0: timeout not active; Value 1: timeout active.
+                touchValue(int).                #Value 0: touch Sensor not active; Value 1: touchSensor is active.
+                ColorValue(vector).             #It contains the color value obtained.
+                errorState(int).                #It contains error condition when one state is too long
+                askTouch(int).                  #It is used for collision avoiding when asking touch sensor
+
+                
+                
+ 	 + to init-with id identifier(int) behavioralRole br(int):			
+                #Initializing variables.
+                draw=(new Drawing).
+                myID=identifier.
+                behavioralRole=br.
+                shapee = ((controller get-model) get-walker-shape).
+                self set-shape to shapee.
+                exec=new basicAutonomousOperations.
+                angle_turn=0.261799.              #Aperture angle of IRSensor (around 15 degrees in each direction).
+                angle_turn2=0.523598.              #Aperture angle of IRSensor (around 30 degrees in each direction).
+                mat_rot_l=[(cos(angle_turn),0,(-1)*sin(angle_turn)),(0,1,0),(sin(angle_turn),0,cos(angle_turn))].
+                mat_rot_ll=[(cos(angle_turn2),0,(-1)*sin(angle_turn2)),(0,1,0),(sin(angle_turn2),0,cos(angle_turn2))].
+                mat_rot_r=[(cos((-1)*angle_turn),0,(-1)*sin((-1)*angle_turn)),(0,1,0),(sin((-1)*angle_turn),0,cos((-1)*angle_turn))].
+                mat_rot_rr=[(cos((-1)*angle_turn2),0,(-1)*sin((-1)*angle_turn2)),(0,1,0),(sin((-1)*angle_turn2),0,cos((-1)*angle_turn2))].
+                
+                #Initializing sensors
+                for i = 0, i < ((controller get-model) get-number-of-sensors), i += 1 : {
+                   push ((controller get-model) get-sensor with-id i with-owner self) onto sensorsList. 		   
+                }
+
+                #Initializing registers and user variables
+                statusMain="00001011".  #Initial register.
+                statusComm1[0]=0.       #Not send at the begining.
+                statusComm1[1]=(-1).    #none channel for receiving.
+                statusComm2="00000000". #None channel for sending and no new input messages.
+                statusPlan=1.           #Initial plan: do nothing
+                statusPlanLast=1.       #Initial plan: do nothing
+                receivMessage1="".      #Message null at the beginning.
+                receivMessage2="".      #Message null at the beginning.
+                sendMessage1="".        #Message null at the beginning.
+                sendMessage2="".        #Message null at the beginning.
+                send16=0.               #Messages of 8 bits at the beginning.
+                receive16=0.            #Messages of 8 bits at the beginning.
+                avoiding=AVOIDING.      #not collision avoiding at beginning
+                farDistanceProximitySensor=24.3.
+                farDistanceBeamerSensor=28.
+                farObstacleThreshold=15.
+                nearObstacleThreshold=90.
+                closeDistance=6.
+                enableRequest{0}=1.
+                enableRequest{1}=1.
+                enableRequest{2}=1.
+                enableRequest{3}=1.
+                enableRequest{4}=1.
+                enableRequest{5}=1.
+                enableRequest{6}=1.
+                establishedChannel=0.
+                S1Value=-1.
+                S2Value=-1.     
+                if(SHOW_SENSORS_SHAPES==1):{
+                    self set-label to myID.
+                }
+                self set-mu to (10^10).
+                energyValue=200.               #Initial value for energy
+                TimeoutReached=0.
+                touchValue=0.           #Initial value for touch sensor.
+                TWIRotateFlag=1.
+                turningFlag=0.
+                movingFlag=0.
+                delayActive=0.
+                errorState=0.
+                askTouch=0.
+                ColorValue=(-1,-1,-1).
+                self add-menu named "Rotate Right" for-method "RotateRightMenu".        #Menu on right click to rotate to right
+                self add-menu named "Rotate Left" for-method "RotateLeftMenu".          #Menu on right click to rotate to left
+                velocityRobot=VELOCITY.
+                return self.
+        
+        ############################################
+        # Methods internal for the simulation core #
+        ############################################
+        
+        + to get-id:
+            return myID.
+        
+        + to get-MessagesList:
+            return messagesList.
+        
+        + to remoteControl:
+            self stopRobot.
+            statusMain="10000000".      #Flag for remote control
+    
+        + to antonomusCycle:
+            statusMain="00001000".      #Flag for autonomous mode
+            self moveRobot distance 0.
+
+        #Return the sensor with the id
+	+ to get-sensor with-id id (int):
+            if (id < |sensorsList|) :{
+               return (sensorsList{id}).
+            }
+            if (id >= ((controller get-model) get-number-of-sensors)) : {
+               printf "get-sensor: sensor with id ". printf id. print " does not exist".
+            }    
+            return 0.
+            
+        #Return the beahavioral Role of the robot
+        + to get-behavioralRole:
+            return behavioralRole.
+        
+        #Set the beahavioral Role of the robot to role
+        + to set-behavioralRole roleType role(int):
+            behavioralRole=role.
+        
+        + to save-color to c(vector):
+            color=c.
+                
+        #Update sensors position
+        + to update-sensors-position:
+            foreach sensor_i in sensorsList:{
+                (sensor_i update-position).
+            }
+            
+        + to setTWIflag:
+            statusMain{6}="1".
+            
+        + to setTWIRotateFlag:
+            TWIRotateFlag=1.
+        
+        ##########################
+        # Methods for simulation #
+        ##########################
+        
+        + to TimerStart iterations i(double):
+            TimeoutReached=0.
+            timerInterruptionAllowed=1.
+            self schedule method-call "timeoutStop" at-time ((controller get-time)+i).
+        
+        + to TimerStop:
+           timerInterruptionAllowed=0. 
+		   
+        + to timeoutStop:
+            if (timerInterruptionAllowed==1):{ 
+                TimeoutReached=1.
+                statusPlanLast=statusPlan.
+                statusPlan=14.
+            }
+            
+        + to clearTurningFlag:
+            turningFlag=0.
+        
+        + to clearMovingFlag:
+            movingFlag=0.
+            
+        #Change the color of robot to blue
+        + to LED_playB:
+            self set-color to (0,0,1).
+        
+        #Change the color of robot to red
+        + to LED_playR:
+            self set-color to (1,0,0).
+        
+        #Change the color of robot to green
+        + to LED_playG:
+            self set-color to (0,1,0).
+        
+        #Change the color of robot to colorVector
+        + to LED_play_otherColor color colorVector(vector):
+            self set-color to colorVector.
+        
+        #Insert a delay of t seconds
+        + to Delay seconds t(double):
+            self stopRobot.
+            delayActive=1.
+            self schedule method-call "delayStop" at-time ((controller get-time)+t).
+        
+        + to delayStop:
+            delayActive=0.
+        
+        #This function models the software interruptions
+        + to TWI_decode:
+            if(TWISendCommand[1]==1):{     #Touch sensor
+                TWISendCommand[1]=0.
+                statusPlanLast=statusPlan.			
+                statusPlan=10.
+                return 1.
+            }
+            if(TWISendCommand[2]==1):{     #Color sensor
+                TWISendCommand[2]=0.
+                statusPlanLast=statusPlan.			
+                statusPlan=16.
+                return 1.
+            }
+            if(TWISendCommand[3]==1):{     #S1 sensor
+                TWISendCommand[3]=0.
+                statusPlanLast=statusPlan.			
+                statusPlan=13.
+                return 1.
+            }
+            if(TWISendCommand[4]==1):{     #S2 sensor
+                TWISendCommand[4]=0.
+                statusPlanLast=statusPlan.			
+                statusPlan=15.
+                return 1.
+            }
+            if(TWISendCommand[5]==1):{     #Energy sensor
+                TWISendCommand[5]=0.
+                statusPlanLast=statusPlan.			
+                statusPlan=11.
+                return 1.
+            }
+            return (-1).
+        
+        #Get the value of touch sensor. It uses the software interruptions
+        #and redirect the execution to plan 10.
+        + to GetTouchValue:
+            TWISendCommand[1]=1.
+            touchValue=(sensorsList{8} isThereObstacle).
+        
+        #Get the value of energy sensor. It uses the software interruptions
+        #and redirect the execution to plan 11.
+        + to GetEnergyValue:
+            TWISendCommand[5]=1.
+            return.
+
+        #Get the value of light sensor 1. It uses the software interruptions
+        #and redirect the execution to plan 13.
+        + to GetS1Value:
+            TWISendCommand[3]=1.
+            S1Value=((self get-sensor with-id 7) get-left-light).
+
+        #Get the value of light sensor 2. It uses the software interruptions
+        #and redirect the execution to plan 15.
+        + to GetS2Value:
+            TWISendCommand[4]=1.
+            S2Value=((self get-sensor with-id 7) get-right-light).
+            
+        #Get the value of color sensor. It uses the software interruptions
+        #and redirect the execution to plan 16.
+        + to GetColorValue:
+            TWISendCommand[2]=1.
+            ColorValue=(sensorsList{9} get-color).
+            
+        ######################
+        # Methods for motion #
+        ######################
+
+        #It reads the value of the sensor IrSensorId and returns the value read from the ADC.
+        + to Read_sensor channel IrSensorId(int):
+            sensorChannel=0.
+            sensorChannel=sensorsList{IrSensorId}.
+            #Only get the value if there is an obstacle
+            if((sensorChannel isThereObstacle)==1):{
+                if(IrSensorId==0):{
+                    shortestDistanceObstacle=farDistanceBeamerSensor.
+                }else{
+                    shortestDistanceObstacle=farDistanceProximitySensor.
+                }
+                detectedObjects=(sensorChannel getObjectInside).
+                #print "Detected objects before remove duplicate: $detectedObjects".
+                #Remove equal objects (for making simulation faster)
+                nMax=|detectedObjects|.
+                nnMax=|detectedObjects|.
+                for n=0,n<nMax,n++:{
+                    for nn=0,nn<nnMax,nn++:{
+                        if(nn!=n):{
+                            if(detectedObjects{n}==detectedObjects{nn}):{
+                                remove detectedObjects{nn}.
+                                if(nn>0):{
+                                    nn--.
+                                    nnMax--.
+                                }
+                            }
+                        }
+                    }
+                    nMax=|detectedObjects|.
+                }
+                #print "Detected objects after remove duplicate: $detectedObjects".
+                #print "---------------------".
+                if(IrSensorId!=0):{     #Proximity sensor
+                    foreach detectedObstacle in detectedObjects:{
+                        #We get the shortest distance to the nearest detected objects.
+                        distanceObstacle=|(detectedObstacle raytrace from-location (self get-location)+(2)*(self get-rotation)*(sensorChannel get-direction) with-direction ((self get-rotation)*(mat_rot_ll*(sensorChannel get-direction))))|.
+                        if(distanceObstacle>0 && distanceObstacle<(shortestDistanceObstacle)):{
+                            shortestDistanceObstacle=distanceObstacle.
+                        }
+                        distanceObstacle=|(detectedObstacle raytrace from-location (self get-location)+(2)*(self get-rotation)*(sensorChannel get-direction) with-direction ((self get-rotation)*(mat_rot_l*(sensorChannel get-direction))))|.
+                        if(distanceObstacle>0 && distanceObstacle<(shortestDistanceObstacle)):{
+                            shortestDistanceObstacle=distanceObstacle.
+                        }
+                        distanceObstacle=|(detectedObstacle raytrace from-location (self get-location)+(2)*(self get-rotation)*(sensorChannel get-direction) with-direction ((self get-rotation)*(sensorChannel get-direction)))|.
+                        if(distanceObstacle>0 && distanceObstacle<shortestDistanceObstacle):{
+                            shortestDistanceObstacle=distanceObstacle.
+                        }
+                        distanceObstacle=|(detectedObstacle raytrace from-location (self get-location)+(2)*(self get-rotation)*(sensorChannel get-direction) with-direction ((self get-rotation)*(mat_rot_r*(sensorChannel get-direction))))|.
+                        if(distanceObstacle>0 && distanceObstacle<(shortestDistanceObstacle)):{
+                            shortestDistanceObstacle=distanceObstacle.
+                        }
+                        distanceObstacle=|(detectedObstacle raytrace from-location (self get-location)+(2)*(self get-rotation)*(sensorChannel get-direction) with-direction ((self get-rotation)*(mat_rot_rr*(sensorChannel get-direction))))|.
+                        if(distanceObstacle>0 && distanceObstacle<(shortestDistanceObstacle)):{
+                            shortestDistanceObstacle=distanceObstacle.
+                        }
+                    }
+                    detectedObjects={}.
+                    if(shortestDistanceObstacle>0 && shortestDistanceObstacle<=farDistanceProximitySensor):{
+                        #It converts a distance to a ADC value
+                        ADCValue=((100/(0.3*((shortestDistanceObstacle+1.1)^6)+1))+(125/(2*((shortestDistanceObstacle-(0.8))^4)+1))+(100/(0.2*((shortestDistanceObstacle-(0.8))^2)+1))+ (6/(0.08*((shortestDistanceObstacle - (12))^2) + 1))).     #Best approx
+                    }else{
+                        ADCValue=0.
+                    }
+                }else{  #Beamer Sensor
+                    #We get the shortest distance to the nearest detected objects.
+                    foreach detectedObstacle in detectedObjects:{
+                        distanceObstacle=|(detectedObstacle raytrace from-location (self get-location)+(1.55)*(self get-rotation)*(sensorChannel get-direction) with-direction ((self get-rotation)*(sensorChannel get-direction)))|.
+                        if(distanceObstacle>0 && distanceObstacle<shortestDistanceObstacle):{
+                            shortestDistanceObstacle=distanceObstacle.
+                        }
+                    }
+                    detectedObjects={}.
+                    if(shortestDistanceObstacle>0 && shortestDistanceObstacle<farDistanceBeamerSensor):{
+                        #It converts a distance to a ADC value
+                        ADCValue=((112/(0.22*((shortestDistanceObstacle+0.5)^6)+1))+(98/(0.95*((shortestDistanceObstacle-(1.6))^4)+1))+(140/(0.1*((shortestDistanceObstacle-(2.3))^2)+1))+ (7.5/(0.03*((shortestDistanceObstacle - (19))^2) + 1))).
+                    }else{
+                        ADCValue=0.
+                    }
+                }
+            }else{      #There is not obstacle
+                detectedObjects={}.
+                ADCValue=0.
+            }
+            return ADCValue.
+
+        #Return the value detected for the ADC (value > 90, obstacle very close; Value < 15 obstacle far)
+        + to Read_distance channel IrSensorId(int):
+            return (self Read_sensor channel IrSensorId).
+
+        #Stop the robot and update the registers.
+        + to stopRobot:
+            exec stop robot self.
+            statusMain{2}="0".    #Reset motion Flag.
+            statusMain{1}="0".    #Reset obstacle Flag.
+            statusMain{4}="0".    #Reset critical collison Flag.
+            statusMain{5}="0".    #Stop read proximity.
+        
+        #Set the robot velocity when it is moving forwards or backwards
+        #There are only four values availables for velocity:
+        # 1 --> Maximun velocity forwards
+        # 2 --> Middle velocity forwards
+        # 3 --> Minimum velocity forwards
+        # 4 --> Minimum velocity backwards
+        + to SetVelocity velocity v(int):
+            if(v!=1 && v!=2 && v!=3 && v!=4):{
+                velocityRobot=191.      #If velocity is an incorrect value, it is the middle velocity forwards.
+            }
+            if (v==1):{
+                velocityRobot=255.
+            }
+            if (v==2):{
+                velocityRobot=191.
+            }
+            if (v==3):{
+                velocityRobot=136.
+            }
+            if (v==4):{
+                velocityRobot=120.
+            }
+            
+        #Move the robot a distance (if distance==0, it moves continuously) and update the registers.
+        + to moveRobot distance d (double):
+            if(d!=0):{                    #Robot moves continuosly
+                if(movingFlag==0):{       #Robot is stopped
+                    statusMain{6}="0".    #clear TWIsynchronozation flag.
+                    movingFlag=1.         #Set moving flag
+                    exec move robot self distance d velocity velocityRobot.
+                }
+            }else{              #Robots moves a fixed distance
+                exec move robot self distance d velocity velocityRobot.
+                statusMain{1}="0".    #Reset obstacle Flag.
+                statusMain{4}="0".    #Reset critical collison Flag.
+            }
+            statusMain{5}="1".    #Start read proximity.
+            statusMain{2}="1".    #Set motion Flag.
+        
+        #Rotate the robot an angle.
+        + to Rotate direction d(int) degrees grades (int):
+            if(turningFlag==0):{      #Robot is not rotating
+                statusMain{6}="0".    #clear TWIsynchronozation flag.
+                turningFlag=1.
+                exec turn robot self direction d degrees grades.
+                statusMain{2}="1".    #Set motion Flag.
+                statusMain{5}="1".    #Start read proximity.
+            }
+        
+	#Rotate the robot an angle but without movement.
+        + to RotateFix direction d(int) degrees grades (int):
+            exec turnFix robot self direction d degrees grades.
+            self update-sensors-position.
+            statusMain{2}="1".    #Set motion Flag.
+            statusMain{5}="1".    #Start read proximity.
+        
+        #Detects is any obstacle is in the way and how far it is. It stores the nearest Obstacle color in colorNearestObject variable
+        + to ReadProximity:
+            statusMain{1}="0".    #Reset obstacle Flag.
+            statusMain{4}="0".    #Reset critical collison Flag.
+            if(statusMain{2}=="1"):{      #Robot is moving or rotating
+                localSensors[1]=(self Read_distance channel 1).
+                localSensors[2]=(self Read_distance channel 2).
+                localSensors[6]=(self Read_distance channel 6).
+                #print "read proximity, distance in sensor 1: $localSensors[1]".
+                #print "read proximity, distance in sensor 2: $localSensors[2]".
+                #print "read proximity, distance in sensor 6: $localSensors[6]".
+                #print "---------------------".
+                
+                #Obstacle very close
+                if((localSensors[1]>nearObstacleThreshold) || (localSensors[2]>nearObstacleThreshold) || (localSensors[6]>nearObstacleThreshold)):{
+                    statusMain{1}="1".    #Set obstacle Flag.
+                    statusMain{4}="1".    #Set critical collison Flag.
+                    statusPlanLast=statusPlan.	#Save last state
+                    if ((statusPlan!=7) && (statusPlan!=8)):{
+                        statusPlan=6.		#go to colision avoiding
+                    }
+                    return.
+                }
+                #Obstacle far
+                if(localSensors[1]>farObstacleThreshold ||localSensors[2]>farObstacleThreshold ||localSensors[6]>farObstacleThreshold):{
+                    statusPlanLast=statusPlan.	#Save last state
+                    if ((statusPlan!=7) && (statusPlan!=8)):{
+                        statusPlan=6.		#go to colision avoiding		
+                    }
+                    statusMain{1}="1".    #Set obstacle Flag.
+                    return.
+                }
+            }
+            
+            
+       ##############################
+       # Methods for communications #
+       ##############################
+
+       #It returns the nearest neighbor which is inside the sensor
+       + to Read_sensor_comm channel IrSensorId(int):
+            sensorChannel=0.
+            sensorChannel=sensorsList{IrSensorId}.
+            #It only get the nearest neighbor if there a neighbor was detected
+            if((sensorChannel isThereNeighbor)==1):{
+                if(IrSensorId==0):{
+                    shortestDistanceNeighbor=farDistanceBeamerSensor.
+                }else{
+                    shortestDistanceNeighbor=farDistanceProximitySensor.
+                }
+                detectedNeighbors=(sensorChannel getObjectInside).
+                #print "-------------------------------".
+                #printf "Robot $myID ($self), sensor ".
+                #print (sensorChannel get-id).
+                #print "Detected robots before remove duplicate: $detectedNeighbors".
+                #Remove equal objects (for making simulation faster)
+                nMax=|detectedNeighbors|.
+                nnMax=|detectedNeighbors|.
+                for n=0,n<nMax,n++:{
+                    for nn=0,nn<nnMax,nn++:{
+                        if(nn!=n):{
+                            if(detectedNeighbors{n}==detectedNeighbors{nn}):{
+                                remove detectedNeighbors{nn}.
+                                if(nn>0):{
+                                    nn--.
+                                    nnMax--.
+                                }
+                            }
+                        }
+                    }
+                    nMax=|detectedNeighbors|.
+                }
+                #print "Detected robots after remove duplicate: $detectedNeighbors".
+                #print "---------------------".
+                nearestNeighbor=0.
+                if(IrSensorId!=0):{     #Proximity sensor
+                    #It gets the nearest robot
+                    foreach detectedNeighbor in detectedNeighbors:{
+                        if((detectedNeighbor get-type)==(self get-type)):{
+                            distanceNeighbor=|(self get-location)-(detectedNeighbor get-location)|-LENGTH_ROBOT.
+                            if(distanceNeighbor>0 && distanceNeighbor<(shortestDistanceNeighbor)):{
+                                shortestDistanceNeighbor=distanceNeighbor.
+                                nearestNeighbor=detectedNeighbor.
+                            }
+                        }
+                    }
+                    #printf "Robot $myID, sensor: ".
+                    #printf (sensorChannel get-id).
+                    #print " nearestNeighbor Robot: $nearestNeighbor".
+                    #It checks if an obstacle is between the robot and the nearest robot
+                    draw clear.
+                    if(nearestNeighbor!=0):{
+                        foreach detectedNeighbor in detectedNeighbors:{
+                            if((detectedNeighbor!=nearestNeighbor) && ((detectedNeighbor get-type)!=(self get-type))):{
+                                distanceNeighbor=|(detectedNeighbor raytrace from-location ((self get-location)+(2)*(self get-rotation)*(sensorChannel get-direction)) with-direction (((nearestNeighbor get-location)-(1)*(self get-location))))|.
+                                if(distanceNeighbor>0 && distanceNeighbor<(shortestDistanceNeighbor)):{
+                                    shortestDistanceNeighbor=distanceNeighbor.
+                                    nearestNeighbor=detectedNeighbor.
+                                }
+                                distanceNeighbor=|(detectedNeighbor raytrace from-location ((self get-location)+(2)*(self get-rotation)*(sensorChannel get-direction)) with-direction (((self get-location)-(1)*(nearestNeighbor get-location))))|.
+                                if(distanceNeighbor>0 && distanceNeighbor<(shortestDistanceNeighbor)):{
+                                    shortestDistanceNeighbor=distanceNeighbor.
+                                    nearestNeighbor=detectedNeighbor.
+                                }
+                            }
+                        }
+                    }
+                    detectedNeighbors={}.
+                    if(nearestNeighbor==0 ||  !(nearestNeighbor is a (self get-type))):{
+                        nearestNeighbor=0.
+                    }
+                }else{  #Beamer Sensor
+                    #It gets the nearest object
+                    foreach detectedNeighbor in detectedNeighbors:{
+                        if((detectedNeighbor get-type)==(self get-type)):{      #Search for all robots detected
+                            distanceNeighbor=|(self get-location)-(detectedNeighbor get-location)|-LENGTH_ROBOT.
+                            if(distanceNeighbor>0 && distanceNeighbor<(shortestDistanceNeighbor)):{
+                                shortestDistanceNeighbor=distanceNeighbor.
+                                nearestNeighbor=detectedNeighbor.
+                            }
+                        }else{          #Search for other objects detected
+                            distanceNeighbor=|(detectedNeighbor raytrace from-location (self get-location)+(1.55)*(self get-rotation)*(sensorChannel get-direction) with-direction ((self get-rotation)*(sensorChannel get-direction)))|.
+                            if(distanceNeighbor>0 && distanceNeighbor<shortestDistanceNeighbor):{
+                                shortestDistanceNeighbor=distanceNeighbor.
+                                nearestNeighbor=detectedNeighbor.
+                            }
+                        }
+                    }
+                    detectedNeighbors={}.
+                    if(nearestNeighbor==0 || !(nearestNeighbor is a (self get-type))):{         #If the nearest object is not a robot
+                        nearestNeighbor=0.
+                    }
+                }
+            }else{      #There is not obstacle
+                detectedNeighbors={}.
+                nearestNeighbor=0.
+            }
+            return nearestNeighbor.
+        
+        #Send an ACK to the nearest neighbor
+        + to sendACK channel IRChannelID(int):
+            push MSG_ACK onto ((nearestNeighbor) get-MessagesList).
+            #printf "robot $myID: ACK sent using channel $IRChannelID to robot ".
+            #print (nearestNeighbor get-id).
+            push self onto ((nearestNeighbor) get-MessagesList).
+            myLastReceiver=nearestNeighbor.
+
+	# Send a message with 8 bits in a specified channel. First, it checks if the robot can see a neighbor
+        + to send_8bits message msg(string) channel IRChannelID(int):
+            if((self Read_sensor_comm channel IRChannelID)!=0):{    #I see a neighbor
+                push (msg) onto (nearestNeighbor get-MessagesList).
+                push (self) onto (nearestNeighbor get-MessagesList).
+                #printf "Robot $myID, has sent message: $msg to robot: ".
+                #printf (nearestNeighbor get-id).
+                #print " using channel $IRChannelID".
+                #printf "Available messages: ".
+                #print statusComm1[0].
+            }
+            messagesList={}.
+            return.
+         
+        # Send a message with 12 bits in a specified channel. First, it checks if the robot can see a neighbor
+        + to send_12bits message1 msg1(string) message2 msg2(string) channel IRChannelID(int):
+            if((self Read_sensor_comm channel IRChannelID)!=0):{    #I see a neighbor
+                push (msg1+msg2) onto (nearestNeighbor get-MessagesList).
+                push (self) onto (nearestNeighbor get-MessagesList).
+            }
+            messagesList={}.
+            return.
+            
+				
+        # Send a message with 16 bits in a specified channel. First, it checks if the robot can see a neighbor
+        + to send_16bits message1 msg1(string) message2 msg2(string) channel IRChannelID(int):
+            if((self Read_sensor_comm channel IRChannelID)!=0):{    #I see a neighbor
+                push (msg1+msg2) onto (nearestNeighbor get-MessagesList).
+                push (self) onto (nearestNeighbor get-MessagesList).
+            }
+            messagesList={}.
+            return.
+         
+        # Detect if someone has sent any message to me   
+        + to ReceiveMessages:
+            statusComm2{7}="0".   #Clear Flag new messages.
+            if (|messagesList|>0 && statusComm2{7}=="0"):{      #My messagesList is not empty and there is no new input messages
+                if(BEAMER_CAN_COMMUNICATE==0):{
+                    initial_i=1.
+                }else{
+                    initial_i=0.
+                }
+                #printf "Robot $myID, I have a received message: $messagesList{0} from robot ".
+                #print (messagesList{1} get-id).
+                #printf "I am trying to find robot ".
+                #print (messagesList{1} get-id).
+                #Search in all channels
+                for ir_channel=initial_i,ir_channel<=6, ir_channel++ :{             #Look up in all channels
+                    #I search for the neighbor which has send me the request
+                    if(messagesList{0}==MSG_ACK):{      #I have received the ACK.
+                        if(statusComm1[0]>0):{
+                            statusComm1[0]=statusComm1[0]-(1).      #Decrement the number of messages sent.
+                        }
+                        statusComm2{7}="0".     #Reset new messsages Flag.
+                        statusComm1[1]=(-1).    #Channel in which I have received.
+                        myLastReceiver=messagesList{1}.
+                        #printf "robot $myID: ACK received using channel $ir_channel from robot ".
+                        #print (messagesList{1} get-id).
+                        #print "-----------------------------------------------------------------".
+                        messagesList={}.        #I erase my message because I was not able to see my neihgbor.
+                        return.
+                    }
+                    if((self Read_sensor_comm channel ir_channel)==messagesList{1}):{   #I see the sender.
+                        #printf "Robot $myID, Robot ".
+                        #printf (messagesList{1} get-id).
+                        #print " found in channel $ir_channel".
+                        messageReceived=1.
+                        receivMessage1=0.
+                        receivMessage2=0.
+                        #Save message in global variables.
+                        if (|messagesList{0}|==8):{          #Message of 8 bits.
+                            receivMessage1=messagesList{0}.
+                            receive16=0.
+                            #printf "robot $myID: message of 8 bits: $receivMessage1 received using channel $ir_channel from robot ".
+                            #print (messagesList{1} get-id).
+                        }
+                        if (|messagesList{0}|==12):{          #Message of 12 bits.
+                            for i=0,i<8,i++ :{
+                                receivMessage1{i}=(messagesList{0}){i}.
+                            }
+                            for i=8,i<12,i++ :{
+                                receivMessage2{i}=(messagesList{0}){i}.
+                            }
+                            #printf "robot $myID: message of 12 bits: $receivMessage1$receivMessage2 received using channel $ir_channel from robot ".
+                            #print (messagesList{1} get-id).
+                            receive16=1.
+                        }
+                        if (|messagesList{0}|==16):{          #Message of 16 bits.
+                            for  i=0,i<8,i++ :{
+                                receivMessage1{i}=(messagesList{0}){i}.
+                            }
+                            for i=8,i<16,i++ :{
+                                receivMessage2{i}=(messagesList{0}){i}.
+                            }
+                            #printf "robot $myID: message of 16 bits: $receivMessage1$receivMessage2 received using channel $ir_channel from robot ".
+                            #print (messagesList{1} get-id).
+                            receive16=2.
+                        }
+                        if (|messagesList{0}|<8):{          #Message less than 8 bits (compatibility for ints).
+                            for  i=0,i<|messagesList{0}|,i++ :{
+                                receivMessage1{i}=(messagesList{0}){i}.
+                            }
+                            receive16=0.
+                        }
+                        statusComm1[1]=ir_channel.          #Save the channel in which I have received.
+                        statusComm2{7}="1".                 #Set new messsages Flag.
+                        self sendACK channel ir_channel.    #Send ACK to the sender
+                        messagesList={}.                    #I erase the lat message decoded.
+                        return.
+                    }else{      #I cannot see the neighbor
+                         statusComm2{7}="0".     #Reset new messsages Flag.
+                         statusComm1[1]=(-1).    #Channel in which I have received.
+                    }
+                }
+                messagesList={}.        #I erase my message because I was not able to see my neihgbor in any sensor.
+            }
+        
+        # Send messages with the datas saved in sendMessage variables
+        + to SendMessages:
+            ir_channel=0.
+            if(BEAMER_CAN_COMMUNICATE==0):{
+                    initial_i=1.
+                }else{
+                    initial_i=0.
+                }
+            #Search in all channels
+            for ir_channel=initial_i,ir_channel<=6, ir_channel++ :{
+                if(statusComm2{ir_channel}=="1"):{      #Check if the actual channel is available for sending
+                    if(send16==0):{
+                        self send_8bits message sendMessage1 channel ir_channel.
+                    }
+                    if(send16==1):{
+                        self send_12bits message1 sendMessage1 message2 sendMessage2 channel ir_channel.
+                    }
+                    if(send16==2):{
+                        self send_16bits message1 sendMessage1 message2 sendMessage2 channel ir_channel.
+                    }
+                }
+            }
+
+        #Reset Communications (disable communications).
+        + to resetComm:
+            sendMessage1=0.
+            sendMessage2=0.
+            statusComm2="00000000".
+            statusComm1[0]=0.
+            statusComm1[1]=0.
+            receivMessage1=0.
+            receivMessage2=0.
+            enableRequest{0}=0.
+            enableRequest{1}=0.
+            enableRequest{2}=0.
+            enableRequest{3}=0.
+            enableRequest{4}=0.
+            enableRequest{5}=0.
+            enableRequest{6}=0.
+            establishedChannel=0.
+
+        # Prepare the sendMessage variables for sending messages
+        + to SendMessage8 message message(string) numberSend numberSend(int) channels channels(string):
+            sendMessage1=message.	#the first byte is message1
+            sendMessage2=0.		#the second byte is 0
+            send16=0.   		#send only 8 bits	
+            statusComm1[0]=numberSend.	#send numberSend times
+            statusComm2=channels.	#send using specific channels
+		
+		+ to SendMessage12 message1 message1(string) message2 message2(string) numberSend numberSend(int) channels channels(string):
+            sendMessage1=message1.		#the first byte is message1
+            sendMessage2=message2.		#the second byte is message2
+            send16=1.   			#send 12 bits	
+            statusComm1[0]=numberSend.	        #send numberSend times
+            statusComm2=channels.	        #send using specific channels
+		
+		+ to SendMessage16 message1 message1(string) message2 message2(string) numberSend numberSend(int) channels channels(string):
+            sendMessage1=message1.		#the first byte is message1
+            sendMessage2=message2.		#the second byte is message2
+            send16=2.   			#send 16 bits	
+            statusComm1[0]=numberSend.	        #send numberSend times
+            statusComm2=channels.	        #send using specific channels
+        
+        #Clear all flags and variables from sensors.
+        + to clear-sensor-variables:
+            foreach sensor_i in sensorsList:{
+                sensor_i clear-variables.
+            }
+        
+        #Function called when Rotate Right from right click menu is pushed
+        + to RotateRightMenu:
+            self RotateFix direction RIGHT degrees 10.
+        
+        #Function called when Rotate Left from right click menu is pushed
+        + to RotateLeftMenu:
+            self RotateFix direction LEFT degrees 10.
+            
+        # Method called after iterate
+        + to post-iterate:
+            #Cases for avoiding escapes in corners
+            if(((self get-location)::x)>(controller get-xbound)-(3)):{
+                self move to (self get-location)-(0.5,0,0).
+                self Rotate direction RIGHT degrees 30.
+            }
+            if(((self get-location)::x)<3):{
+                self move to (self get-location)+(0.5,0,0).
+                self Rotate direction RIGHT degrees 30.
+            }
+            if(((self get-location)::z)>(controller get-zbound)-(3)):{
+                self move to (self get-location)-(0,0,0.5).
+                self Rotate direction RIGHT degrees 30.
+            }
+            if(((self get-location)::z)<3):{
+                self move to (self get-location)+(0,0,0.5).
+                self Rotate direction RIGHT degrees 30.
+            }
+            #Clear variables
+            self clear-sensor-variables.
+            #Energy
+            if (statusMain{2}=="1"):{energyValue=energyValue - (ENERGY_CONSUMPTION_PER_TURN * 10 ).}
+            else energyValue=energyValue - ENERGY_CONSUMPTION_PER_TURN.
+            #Update new position
+            self update-sensors-position.
+}

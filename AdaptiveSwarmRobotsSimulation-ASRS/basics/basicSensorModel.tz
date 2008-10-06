@@ -1,0 +1,53 @@
+@use Abstract.
+@include "basics/basicSensorFactory.tz".
+
+Abstract : basicSensorStruct {
+%  
+	 + variables:
+%  
+		type, id  (int).
+		direction (vector).
+		settings (list).
+
+	 + to init-with type _type (int) with-id _id (int) with-direction _direction (vector):
+%  
+		type      = _type.
+		id        = _id.
+		direction = _direction.
+		
+		return self.
+        
+        + to init-with type _type (int) with-id _id (int):
+%  
+		type      = _type.
+		id        = _id.
+		
+		return self.
+
+	+ to init-with type _type (int) with-id _id (int) with-direction _direction (vector) with-settings _settings (list):
+%  
+		type      = _type.
+		id        = _id.
+		direction = _direction.
+		settings  = _settings.
+		
+		print |settings|.
+
+		return self.
+
+	+ to get-type:
+%  
+		return type.
+
+	+ to get-id:
+%  
+		return id.
+
+	+ to get-direction:
+%  
+		return direction.
+
+	+ to get-settings:
+		return settings.
+}
+

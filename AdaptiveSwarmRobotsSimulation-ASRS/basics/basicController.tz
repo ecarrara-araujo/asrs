@@ -1,0 +1,175 @@
+#@use stMDLePlugin.
+#@use Movie.
+@use Control.
+@include "basics/Stage.tz"
+@include "model/robot/JASMINEIII.tz"
+
+#Subclass "Control" and define our "basicControl" object.
+
+Control : basicControl {
+	# Here we define the class variables.  
+
+	+ variables:
+		stage         (object).
+		draw          (object).
+		model         (object).
+		#defines       (object).
+		#pheromones    (list).
+
+	# Next we define a method called init.  The init method is called 
+	# automatically when our class is created.  Since this is the controller
+	# class, an instance gets created when we launch the simulation,
+	# so this is the entry point for our simulation.
+
+	+ to init:
+	% This method initializes *only* the defines-object. Please change the 
+	% the defines-object within your init method according to your environment 	
+	% After that you can call init-all to get stage, model, camera ...
+		#defines	= new BasicDefineClass.
+		#self make-menu.		
+
+	+ to init-all stageFile textFile(string):
+	% At this point the define object is in good state. this method must be		
+	% called by childs from this controller.
+
+ 		
+		#draw = new Drawing.
+		#stage = new textStage init-with file-name (defines get-labFile).
+		stage = new textStage init-with file-name textFile.
+		#if (defines get-enableShadows) :
+                #self enable-shadows.
+		self point-camera at ((stage get-xbound)/2, 0, (stage get-zbound)/2) from (0, max((stage get-xbound),(stage get-zbound))*1.4, 0).
+
+		#if (model == 0) : {
+		#   if ((defines get-modelID) == 0) : {
+		#       model = new JASMINE.
+		#   } else {
+		#       model = new ISWARM.
+	        #}
+	     #}
+	     
+	     
+
+
+	+ to iterate:
+		#self update-neighbors.
+		#draw clear.
+		#if (defines get-drawCoordSystem) :{
+		#	draw set-color to (1,0,0).
+		#	draw draw-line from (4,4,4) to (24,4,4).
+		#	draw set-color to (0,1,0).
+		#	draw draw-line from (4,4,4) to (4,24,4).
+		#	draw set-color to (0,0,1).
+		#	draw draw-line from (4,4,4) to (4,4,24).
+		#}
+#		print "Controller iterate".
+		super iterate.
+
+	+ to get-draw:
+		return draw.
+
++ section "Arena Functions"
+
+	+ to get-xbound:
+		return (stage get-xbound).
+
+	+ to get-zbound:
+		return (stage get-zbound).
+		
+	+ to get-stage:
+		return stage.
+
+
++ section "Model Functions"
+
+	+ to get-model:
+		return model.
+
+#+ section "Define Functions"
+#	+ to get-defines:
+#		return defines.
+
+
+
+
+
+
+
+	#+ to make-menu:
+	#	self add-menu named "draw front" for-method "switch-drawFront".		
+	#	self add-menu named "draw shadows" for-method "switch-enableShadows".		
+	#	self add-menu named "draw sensor" for-method "switch-drawSensor".		
+	#	self add-menu named "draw neighbour lines" for-method "switch-showNeighbourLines".
+	#	self add-menu named "show coordinate-system (x,y,z):(r,g,b)" for-method "switch-drawCoordSystem".
+	#	self add-menu named "debug on-off" for-method "switch-debug".		
+		
+
+	#- to switch-drawFront:
+	#	help (int).
+	#	help = defines get-drawFront.
+	#	defines set-drawFront to (!help).
+
+	#- to switch-enableShadows:
+	#	help (int).
+	#	help = defines get-enableShadows.
+	#	defines set-enableShadows to (!help).
+
+	#- to switch-drawSensor:
+	#	help (int).
+	#	help = defines get-drawSensor.
+	#	defines set-drawSensor to (!help).
+		
+	#- to switch-showNeighbourLines:
+	#	help (int).
+	#	help = defines get-showNeighbourLines.
+	#	defines set-showNeighbourLines to (!help).
+		
+	#- to switch-drawCoordSystem:
+	#	help (int).
+	#	help = defines get-drawCoordSystem.
+	#	defines set-drawCoordSystem to (!help).
+		
+	#- to switch-debug:
+	#	help (int).
+	#	help = defines get-debug.
+	#	defines set-debug to (!help).
+
+
+
+
+
+
+# Special procedures for scenarios with pheromones:
+# How to use it: 
+# 1.) Add at least one pheromone in the init procedure of your controller. 
+#     For example basicPheromone:
+#     self addPheromone with-name "basicPheromone" with-patchSize PATCH_SIZE.
+# 2.) Update the whole grid in the iterate procedure of your controller (note
+#     that this is computationally intensive). 
+#     For example evaportaion:
+#     foreach pheromone in pheromones:
+#       for i=0,i<(self get-xbound)/PATCH_SIZE,i++:
+#	  for j=0,j<(self get-zbound)/PATCH_SIZE,j++: 
+#	    (pheromone get-patch-at x i y 0 z j) evaporate by RATE.
+# 3.) Add the sensor type 254 to your model (for example: push (new 
+#     basicSensorStruct init-with type 254 with-id 1 
+#     with-direction (1,0,0) with-settings {"basicPheromone"}) 
+#     onto sensorList.)
+# 4.) Get pheromone gradients in your Executable with get-gradient-x 
+#     or get-gradient-y. 
+#     For example: ((owner get-sensor with-id 1) get-gradient-x)
+# 5.) Put pheromones with your sensor (which is actually also an actuator...). 
+#     For example in the iterate procedure in the agent class:
+#     ((self get-sensor with-id 1) increment-pheromone by 0.07)
+
+
+
+	#+ to getPheromones:
+	#	return pheromones.
+
+	#+ to addPheromone with-name patchClass (string) with-patchSize patchSize (float):
+	#	push (new basicPheromonePatchGrid init-with location ((self get-xbound)/2,0,(self get-zbound)/2) patch-size (patchSize, patchSize, patchSize) x-count (self get-xbound)/patchSize y-count 1 z-count (self get-zbound)/patchSize patch-class patchClass) onto pheromones.
+
+		
+}
+
