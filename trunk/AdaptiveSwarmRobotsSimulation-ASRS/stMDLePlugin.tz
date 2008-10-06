@@ -1,0 +1,247 @@
+@plugin "libisbreve.so" (mdleFunctions).
+@use Object.
+@use Mobile.
+@use Link.
+@use MultiBody.
+
+#Controller mdleTestController.
+
+Object : Executeable {	
+	+ variables:
+		name (string).
+		owner (object).
+
+	+ to init-with owner _owner (object) with-id id (string):
+		owner = _owner.
+		name  = id.
+		return self.
+
+		#should be overwritten
+	+ to execute:
+		printf "execute: ".
+		print name.
+
+	+ to execute-with args argList(list):
+		printf "execute: ".
+		print name.
+
+	+ to get-name:
+		return name.  
+}
+
+Object : Interruptible {
+	+ variables:
+		name (string).
+		owner (object).	
+
+	+ to init-with owner _owner (object) with-id id (string):
+		owner = _owner.
+		name  = id.
+		return self.
+
+		#should be overwritten
+	+ to evaluate:		
+		printf "interrupt: ".
+		print name.
+
+	+ to get-name:
+		return name.         
+}
+
+Object : Variable {
+	+ variables:
+		name (string).
+		owner (object).
+
+	+ to init-with owner _owner (object) with-id id (string):
+		owner = _owner.
+		name  = id.
+		return self.
+
+		#should be overwritten
+	+ to get-value:		
+		printf "Variable: ".
+		print name.
+
+	+ to get-name:
+		return name.         
+}
+
+Object : MDLeFactory {
+	+ variables:
+		exec (object).
+		interrupt (object).
+		variable (object).
+		o_list (list). #to force the gc to keep the objects
+		variable-vector (list).
+		interrupt-vector (list).
+		executable-vector (list).
+
+	+ to get-executable to-id identifier (string):
+		print "new Executeable".
+		exec = new Executeable.
+		exec set-name to-id identifier.
+		push exec onto o_list.
+		return (exec).
+
+	+ to get-interrupt to-id identifier (string):
+		print "new Interrupt".
+		interrupt = new Interruptible.
+		interrupt set-name to-id identifier.
+		push interrupt onto o_list.
+		return (interrupt).		
+
+	+ to get-variable to-id identifier (string):
+		print "new Variable".
+		interrupt = new Variable.
+		interrupt set-name to-id identifier.
+		push interrupt onto o_list.
+		return (interrupt).		
+
+	+ to get-variable-vector:
+		print "+ to get-variable-vector:".
+		return variable-vector.
+
+	+ to get-interrupt-vector:
+		print "+ to get-variable-vector:".
+		return interrupt-vector.
+
+	+ to get-executable-vector:
+		print "+ to get-variable-vector:".
+		return executable-vector.
+
+}
+
+Mobile : MDLeMobileFactory {
+	+ variables:
+		exec (object).
+		interrupt (object).
+		variable (object).
+		o_list (list). #to force the gc to keep the objects
+		variable-vector (list).
+		interrupt-vector (list).
+		executable-vector (list).
+
+	+ to get-executable to-id identifier (string):
+		print "new Executeable".
+		exec = new Executeable.
+		exec set-name to-id identifier.
+		push exec onto o_list.
+		return (exec).
+
+	+ to get-interrupt to-id identifier (string):
+		print "new Interrupt".
+		interrupt = new Interruptible.
+		interrupt set-name to-id identifier.
+		push interrupt onto o_list.
+		return (interrupt).		
+
+	+ to get-variable to-id identifier (string):
+		print "new Variable".
+		interrupt = new Variable.
+		interrupt set-name to-id identifier.
+		push interrupt onto o_list.
+		return (interrupt).		
+
+	+ to get-variable-vector:
+		print "+ to get-variable-vector:".
+		return variable-vector.
+
+	+ to get-interrupt-vector:
+		print "+ to get-variable-vector:".
+		return interrupt-vector.
+
+	+ to get-executable-vector:
+		print "+ to get-variable-vector:".
+		return executable-vector.
+}
+
+Link : MDLeLinkFactory {
+	+ variables:
+		exec (object).
+		interrupt (object).
+		variable (object).
+		o_list (list). #to force the gc to keep the objects
+		variable-vector (list).
+		interrupt-vector (list).
+		executable-vector (list).
+
+	+ to get-executable to-id identifier (string):
+		print "new Executeable".
+		exec = new Executeable.
+		exec set-name to-id identifier.
+		push exec onto o_list.
+		return (exec).
+
+	+ to get-interrupt to-id identifier (string):
+		print "new Interrupt".
+		interrupt = new Interruptible.
+		interrupt set-name to-id identifier.
+		push interrupt onto o_list.
+		return (interrupt).		
+
+	+ to get-variable to-id identifier (string):
+		print "new Variable".
+		interrupt = new Variable.
+		interrupt set-name to-id identifier.
+		push interrupt onto o_list.
+		return (interrupt).		
+
+	+ to get-variable-vector:
+		print "+ to get-variable-vector:".
+		return variable-vector.
+
+	+ to get-interrupt-vector:
+		print "+ to get-variable-vector:".
+		return interrupt-vector.
+
+	+ to get-executable-vector:
+		print "+ to get-variable-vector:".
+		return executable-vector.
+}
+
+MultiBody : MDLeMBFactory {
+	+ variables:
+		exec (object).
+		interrupt (object).
+		variable (object).
+		o_list (list). #to force the gc to keep the objects
+		variable-vector (list).
+		interrupt-vector (list).
+		executable-vector (list).
+
+	+ to get-executable to-id identifier (string):
+		print "new Executeable".
+		exec = new Executeable.
+		exec set-name to-id identifier.
+		push exec onto o_list.
+		return (exec).
+
+	+ to get-interrupt to-id identifier (string):
+		print "new Interrupt".
+		interrupt = new Interruptible.
+		interrupt set-name to-id identifier.
+		push interrupt onto o_list.
+		return (interrupt).		
+
+	+ to get-variable to-id identifier (string):
+		print "new Variable".
+		interrupt = new Variable.
+		interrupt set-name to-id identifier.
+		push interrupt onto o_list.
+		return (interrupt).		
+
+	+ to get-variable-vector:
+		print "+ to get-variable-vector:".
+		return variable-vector.
+
+	+ to get-interrupt-vector:
+		print "+ to get-variable-vector:".
+		return interrupt-vector.
+
+	+ to get-executable-vector:
+		print "+ to get-variable-vector:".
+		return executable-vector.
+}
+
+

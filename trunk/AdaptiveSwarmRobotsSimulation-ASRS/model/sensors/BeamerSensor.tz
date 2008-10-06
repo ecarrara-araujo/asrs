@@ -1,0 +1,131 @@
+@use Shape.
+@use Mobile.
+@include "asrs/ASRSAutonomousConfig.tz"  
+
+Mobile:BeamerSensor {
+
+    + variables:
+        id (int).
+        owner(object).
+        direction(vector).
+        shape(object).
+        is_obstacle(int).
+        is_neighbor(int).
+        vector1(vector).
+        able_to_communicate(int).
+        mat_rotR(matrix).
+        mat_rotL(matrix).
+        objectInside(list).
+        allowToComm(int).
+		
+        
+    + to init id i(int) owner o(object) direction d(vector):
+        id=i.
+        owner=o.
+        direction=d.
+        is_obstacle=0.
+        is_neighbor=0.
+        able_to_communicate=0.
+        mat_rotR=[(cos(PI/12),0,(-1)*sin(PI/12)),(0,1,0),(sin(PI/12),0,cos(PI/12))].
+        mat_rotL=[(cos((-1)*PI/12),0,(-1)*sin((-1)*PI/12)),(0,1,0),(sin((-1)*PI/12),0,cos((-1)*PI/12))].
+        allowToComm=1.
+        objectInside={}.
+        
+        shape=new BeamerShape.          #Create the shape of beamer sensor
+        self set-color to (0,0,1).
+        self set-transparency to 2*IR_TRANSPARENCY.
+        self set-shape to shape.        #Asign the shape of beamer sensor to the sensor
+        self update-position.           #Set the beamer sensor in its correct position
+        if(SHOW_SENSORS_SHAPES==0):{
+            self make-invisible.
+        }
+        #handle-collisions for proximity and communication functions
+        self handle-collisions with-type "Obstacle" with-method "collision-Obstacle".
+        self handle-collisions with-type "MovingObstacle" with-method "collision-Obstacle".
+        self handle-collisions with-type "JasmineIII" with-method "collision-Robot".
+        return self.        
+    
+    #It sets the sensor in the correct position with regarding to the robot.
+    + to update-position:
+        self set-rotation to (owner get-rotation).
+        vector1=(owner get-rotation)*(direction).
+        self relative-rotate around-axis (0,1,0) by angle((0,0,1),direction).        
+        self move to ((owner get-location)+(19)*(owner get-rotation)*direction).
+
+
+    #Functions to get variables        
+    + to get-id:
+        return id.
+    
+    + to get-owner:
+        return owner.
+    
+    + to get-shape:
+        return shape.
+
+    + to get-direction:
+        return direction.
+    
+    + to getObjectInside:
+        return objectInside.
+    
+    + to isThereObstacle:
+        return is_obstacle.
+
+    + to isThereNeighbor:
+        return is_neighbor.
+        
+    #Functions to set variables
+    + to setNoObjectInside:
+        objectInside={}.
+
+    + to setThereIsNotObstacle:
+        is_obstacle=0.
+    
+    + to setThereIsNotNeighbor:
+        is_neighbor=0.
+
+    + to clear-variables:
+        self setThereIsNotObstacle.
+        self setThereIsNotNeighbor.
+        self setNoObjectInside.
+
+    #Methods for handle-collisions
+    + to collision-Obstacle obstacleInside obstacleInside(object):
+        is_obstacle=1.          #Flag for motion functions
+        push obstacleInside onto objectInside.
+
+    + to collision-Robot robotInsideDetected robotInsideDetected(object):
+        if(robotInsideDetected!=owner):{
+            is_obstacle=1.      #Flag for motion functions
+            is_neighbor=1.      #Flag for communication functions
+            push robotInsideDetected onto objectInside.
+        }
+}          
+
+#Class to create the polygon shape of the sensor
+CustomShape: BeamerShape{
+
+    + variables:
+        vertices(list).
+            
+    + to init:
+        vertices{0}=(0,1,-14.75).
+        vertices{1}=(-0.921,1,0).
+        vertices{2}=(0,1,14.75).
+        vertices{3}=(0.921,1,0).
+        vertices{4}=(0,-1,-14.75).
+        vertices{5}=(-0.921,-1,0).
+        vertices{6}=(0,-1,14.75).
+        vertices{7}=(0.921,-1,0).
+        
+        
+        self add-face with-vertex-list { vertices{0}, vertices{4}, vertices{5}, vertices{1}}.
+        self add-face with-vertex-list { vertices{1}, vertices{5}, vertices{6}, vertices{2}}.
+        self add-face with-vertex-list { vertices{2}, vertices{6}, vertices{7}, vertices{3}}.
+        self add-face with-vertex-list { vertices{3}, vertices{7}, vertices{4}, vertices{0}}.
+        self add-face with-vertex-list { vertices{0}, vertices{1}, vertices{2},vertices{3}}.
+        self add-face with-vertex-list { vertices{4}, vertices{5}, vertices{6},vertices{7}}.
+        self finish-shape with-density 1.0.
+        return self.
+}

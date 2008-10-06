@@ -1,0 +1,38 @@
+@include "basics/basicModel.tz"
+
+BasicModel : JasmineIIImodel {
+
+        + variables:
+	
+        + to init:
+            super init.         #Create a new SensorFactory
+            walkerShape   = (new Cube init-with size (LENGTH_ROBOT,LENGTH_ROBOT,LENGTH_ROBOT)).
+			walkerLeftWheel = (new PolygonDisk init-with sides 50 height 1.0 radius 1).
+			walkerRightWheel = (new PolygonDisk init-with sides (50) height (1.0) radius (1)).
+            
+            numberSensors = 0.
+                #Beamer Sensor
+                push (new basicSensorStruct init-with type 13  with-id 0 with-direction (1,0,0)) onto sensorList.
+                numberSensors = numberSensors +1.
+                #Proximity Sensors.
+                push (new basicSensorStruct init-with type 12  with-id 1 with-direction (1,0,0)) onto sensorList.
+                push (new basicSensorStruct init-with type 12  with-id 2 with-direction (0.5,0,0.866)) onto sensorList.
+                push (new basicSensorStruct init-with type 12  with-id 3 with-direction (-0.5,0,0.866)) onto sensorList.
+                push (new basicSensorStruct init-with type 12  with-id 4 with-direction (-1,0,0)) onto sensorList.
+                push (new basicSensorStruct init-with type 12  with-id 5 with-direction (-0.5,0,-0.866)) onto sensorList.
+                push (new basicSensorStruct init-with type 12  with-id 6 with-direction (0.5,0,-0.866)) onto sensorList.
+                numberSensors = numberSensors +6.
+                #Light Sensor
+                push (new basicSensorStruct init-with type 14  with-id 7) onto sensorList.
+		numberSensors = numberSensors +1.
+                #Touch Sensor
+                push (new basicSensorStruct init-with type 15  with-id 8) onto sensorList.
+		numberSensors = numberSensors +1.
+                #Color Sensor
+                push (new basicSensorStruct init-with type 16  with-id 9 with-direction (1,0,0)) onto sensorList.
+		numberSensors = numberSensors +1.
+            
+            
+            
+		
+}

@@ -1,0 +1,36 @@
+#Configuration File for JASMINE-III Simulation.
+
+#Global constants (PLEASE DO NOT CHANGE!!)
+@define PI 3.141592654.
+@define PI_HALF 1.5708.
+@define PI_QUARTER 0.7853.
+@define LENGTH_ROBOT 2.48.
+@define IR_TRANSPARENCY 0.05.       
+@define LEFT 0.
+@define RIGHT 1.     
+@define VELOCITY_TURN 10.			
+@define VELOCITY 255.
+@define LIGHT_APERTURE_ANGLE 30.        
+
+#About simulation (It is possible to change)
+@define STAGE_FILENAME "stages/StageBasic.sce".		#Name of the file for creating the Stage.
+@define MOVIE_FILENAME "./simulation_15_09_06.avi".	#The file is saved in the breve directory.
+@define RECORD_VIDEO 0.                 #Value 0: not record video; Value 1: Record video (only valid for Breve 2.4)
+@define NUMBER_ROBOTS 2.                #Number of robots.
+@define ENERGY_CONSUMPTION_PER_TURN 0.0001.  #Energy consumption per turn -> 0.01 enough for ~35 simulation turns
+                                                                           #0.001 enough for ~350 simulation turns  
+                                                                           #0.0001 low (enough for ~3500 simulation turns.
+@define REGISTER_BEHAVIORS "010100".    #Register for behavioral roles (al least write a character even 0).
+                                        #bit 0-1: Number of robots of behavioral role type 0 (normal robot).
+                                        #bit 2-3: Number of robots of behavioral role type 1 (scout robot).
+                                        #bit 4-5: Number of robots of behavioral role type 2 (new role).
+                                        #bit i-i+1: Number of robots of behavioral role type (i/2-1) with role type always >=0.
+                                        #Types of behavioral Roles: 0 normal robot, 1 scout robot
+                                        #If it is not specified, a new robot has normal role.
+                                        #Example: N_TYPES_BEHAVIOR "020308"  -->  bit 0 and 1: 2 robots with role 0 (normal robot).
+                                                                                # bit 2 and 3: 3 robots with role 1 (scout robot).
+                                                                                # bit 4 and 5: 8 robots with role 2 (new behavior).
+#About robots   (It is possible to change)
+@define AVOIDING 20.                    #Rotation for collision avoiding: small - fine avoiding (always >10), large: - random motion (always < 40)
+@define BEAMER_CAN_COMMUNICATE 0.       #Value 0: Beamer is not used for communicating; Value 1: Beamer is also used for communicating.
+@define SHOW_SENSORS_SHAPES 1.          #Value 0: Sensors shapes are not visible; Value 1: Display sensor shapes (for debugging).

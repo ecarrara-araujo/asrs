@@ -1,0 +1,269 @@
+@use Object.
+@use Stationary.
+@use File.
+@use PatchGrid.
+
+
+#@define FLOOR_X 370.
+@define FLOOR_Y 1.3.
+#@define FLOOR_Z 370.
+
+@define COLOR (0,0.9,0.1).
+
+@define WALL_W 1.
+@define WALL_H 2.5.
+
+@define BOUNCE 0.1.
+
+Stationary : Obstacle {
+}
+
+Object : textStage {       
+       % Reads a text-file with a labyrinth.
+       % In the even columns are the vertical walls and 
+       % in the odd columns are the horizontal walls.
+       % <br>
+       %  1 3 5<br>        
+       % 0 2 4 6<br>
+       %  _   _  <br>
+       % | |_| |<br>
+       % |  ___|<br>
+       % |  _  |<br>
+       % | |_  |<br>
+       % |  ___|<br>
+       % |     |<br>
+       % |_____|<br>
+    
+	+ variables:
+		floor, floor-shape         (object).
+		wall-shape-x, wall-shape-y (object).
+		xbound, zbound             (double).
+		wallList                   (list).
+
+	+ to init-with file-name filename (string):
+		file, wall       (object).
+		line, line2, cmp (string).
+		xcount, ycount, xmax, ymax   (int).
+		FLOOR_X, FLOOR_Z (double).
+		debugcount (int).
+		
+		file = new File.
+		file open-for-reading with-file filename.
+
+		xmax = 0.
+		ymax = 0.
+
+		wall-shape-x = (new Cube init-with size (20, WALL_H,  1)).
+		wall-shape-y = (new Cube init-with size ( 1, WALL_H, 20)).
+		
+		ycount = 0.
+	        line = file read-line.
+			
+		
+		debugcount = 0.
+		while (!(file is-end-of-file)) : {
+		      xcount = 0.
+		      line2 = file read-line.
+		      while (xcount < (|line|)) : {
+			  wall = 0.
+			  cmp = line { xcount }.
+			  if ((xcount%2) == 0) : { 
+				
+				if (cmp == "|") : {	
+					printf "|".
+					wall = new Obstacle.
+					wall register with-shape wall-shape-y
+					 at-location ((xcount * 10), (WALL_H/2 - FLOOR_Y/2),
+					 (ycount * 20) - 10 ).
+					wall set-e to BOUNCE.
+					wall set-color to COLOR.			     
+			             
+					if xcount > xmax : xmax = xcount.
+					if ycount > ymax : ymax = ycount.
+			     }
+			     if (cmp == "H") : {			     
+					printf "|".
+					wall = new Obstacle.
+					wall register with-shape wall-shape-y at-location ((xcount * 10), (WALL_H/2 - FLOOR_Y/2), (ycount * 20)+10 ).
+					wall set-e to BOUNCE.
+					wall set-color to COLOR.			     
+					wall = new Obstacle.
+					wall register with-shape wall-shape-y at-location ((xcount * 10)- 10, (WALL_H/2 - FLOOR_Y/2), (ycount * 20)+10 ).
+					wall set-e to BOUNCE.
+					wall set-color to COLOR.			     
+			             
+					if xcount > xmax : xmax = xcount.
+					if ycount > ymax : ymax = ycount.
+			     }
+			    if (cmp == "h") : {			     
+				printf "|".
+				wall = new Obstacle.
+				wall register with-shape wall-shape-y at-location ((xcount * 10), (WALL_H/2 - FLOOR_Y/2), (ycount * 20)+10 ).
+				wall set-e to BOUNCE.
+				wall set-color to COLOR.			     
+				wall = new Obstacle.
+				wall register with-shape wall-shape-y at-location (((xcount * 10)) + 10, (WALL_H/2 - FLOOR_Y/2), (ycount * 20)+10 ).
+				wall set-e to BOUNCE.
+				wall set-color to COLOR.			     
+		             
+				if xcount > xmax : xmax = xcount.
+				if ycount > ymax : ymax = ycount.
+			     }
+			     if (cmp == " ") : printf " ".
+			  } else : {
+
+			  if ((xcount%2) == 1) : { 
+			     if (cmp == "_") : {
+				printf "_".
+				wall = new Obstacle.
+				wall register with-shape wall-shape-x at-location ((xcount * 10), (WALL_H/2 - FLOOR_Y/2), (ycount * 20) ).
+				wall set-e to BOUNCE.
+				wall set-color to	COLOR.		
+	     
+				if xcount > xmax : xmax = xcount.
+				if ycount > ymax : ymax = ycount.
+			     } 
+			     if (cmp == "=") : {
+				printf "_".
+				wall = new Obstacle.
+				wall register with-shape wall-shape-x at-location ((xcount * 10), (WALL_H/2 - FLOOR_Y/2), (ycount * 20) ).
+				wall set-e to BOUNCE.
+				wall set-color to COLOR.		
+				wall = new Obstacle.
+				wall register with-shape wall-shape-x at-location ((xcount * 10), (WALL_H/2 - FLOOR_Y/2), (ycount * 20)+10 ).
+				wall set-e to BOUNCE.
+				wall set-color to COLOR.		
+	     
+				if xcount > xmax : xmax = xcount.
+				if ycount > ymax : ymax = ycount.
+			     } 
+			     if (cmp == "-") : {
+				printf "_".
+				wall = new Obstacle.
+				wall register with-shape wall-shape-x at-location ((xcount * 10), (WALL_H/2 - FLOOR_Y/2), (ycount * 20)+10 ).
+				wall set-e to BOUNCE.
+				wall set-color to COLOR.		
+	     
+				if xcount > xmax : xmax = xcount.
+				if ycount > ymax : ymax = ycount.
+			     }
+			     if (cmp == " ") : printf " ".
+			  } else : printf " ".
+			  } 
+			  
+			  if (wall) :
+			     push wall onto wallList.
+			  
+			  xcount++.
+		      } 
+		      ycount++.
+		      line = line2.
+		      print " ".
+
+		}
+
+		FLOOR_X = xmax/2 * 20. 
+		FLOOR_Z = ymax * 20.
+		xbound = FLOOR_X.
+		zbound = ((FLOOR_Z)).
+
+		#if ((controller get-defines) get-showFloor) : {
+		   floor-shape = (new Cube init-with size (FLOOR_X, FLOOR_Y, FLOOR_Z)).
+		   floor = new Stationary.
+		   floor register with-shape floor-shape at-location (xbound/2, -FLOOR_Y/2, zbound/2).
+		   floor set-e to BOUNCE.
+		#}
+
+		print |(self get-wall-list)|.
+
+		return self.
+
+	+ to get-xbound:
+		return xbound.
+
+	+ to get-zbound:
+		return zbound.
+		
+	+ to get-wall-list:	
+		return wallList.
+
+}
+
+Object : GPStage0 {
+	+ variables:
+		floor, floor-shape (object).
+		wall-shape-x, wall-shape-y (object).
+
+	+ to create-boarder with-x-dim xdim (double) and-z-dim zdim (double):
+	        x_count, z_count, x_pos, z_pos (double).
+		wall (object).
+
+		x_count = xdim/20.		
+		z_count = zdim/20.
+
+		x_pos = -(x_count/2).
+		z_pos = (z_count/2).
+		while x_pos < ((x_count/2)+1) : {
+		      wall = new Obstacle.
+		      wall register with-shape (self get-wall-x) at-location ((x_pos * 20), WALL_H/2 - FLOOR_Y/2, (z_pos * 20)).
+		      wall set-e to BOUNCE.
+		      wall set-color to COLOR.
+
+		      wall = new Obstacle.
+		      wall register with-shape (self get-wall-x) at-location ((x_pos * 20), WALL_H/2 - FLOOR_Y/2, -(z_pos * 20)).
+		      wall set-e to BOUNCE.
+		      wall set-color to COLOR.
+		      
+		      x_pos = x_pos + 1.
+		}
+
+		x_pos = (x_count/2).
+		z_pos = -(z_count/2).
+		while z_pos < ((z_count/2)+1) : {
+		      wall = new Obstacle.
+		      wall register with-shape (self get-wall-y) at-location ((x_pos * 20), WALL_H/2 - FLOOR_Y/2, (z_pos * 20)).
+		      wall set-e to BOUNCE.
+		      wall set-color to COLOR.
+
+		      wall = new Obstacle.
+		      wall register with-shape (self get-wall-y) at-location (-(x_pos * 20), WALL_H/2 - FLOOR_Y/2, (z_pos * 20)).
+		      wall set-e to BOUNCE.
+		      wall set-color to COLOR.
+		      
+		      z_pos = z_pos + 1.
+		}
+	        		
+
+
+        - to get-wall-x:
+	        return  wall-shape-x.	
+
+        - to get-wall-y:
+	        return  wall-shape-y.	
+
+	+ to init-with size-x FLOOR_X (double) with-size-z FLOOR_Z (double):
+		extra_walls (double).
+
+		floor-shape = (new Cube init-with size (FLOOR_X, FLOOR_Y, FLOOR_Z)).
+		floor = new Stationary.
+		floor register with-shape floor-shape at-location (0, -FLOOR_Y/2, 0).
+		floor set-e to BOUNCE.
+
+		wall-shape-x = (new Cube init-with size (20, WALL_H,  1)).
+		wall-shape-y = (new Cube init-with size ( 1, WALL_H, 20)).
+		
+		extra_walls = 1.
+
+		while extra_walls >= 0 : {		
+		      self create-boarder with-x-dim (FLOOR_X+(extra_walls*15)) and-z-dim (FLOOR_Z+(extra_walls*15)).
+		      extra_walls = extra_walls - 1.
+		}
+		return self.
+
+#	+ to init:
+#		self init-with size-x 160 with-size-z 120.		
+#		return self.
+
+
+}
+

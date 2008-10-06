@@ -1,0 +1,135 @@
+@include "model/sensors/IRSensorPolygon.tz".
+@include "model/sensors/BeamerSensor.tz".
+@include "model/sensors/LightSensor.tz".
+@include "model/sensors/TouchSensor.tz".
+@include "model/sensors/ColorSensor.tz".
+
+Abstract : basicSensorFactory {
+%  
+
+	 + to get-sensor with-struct struct (object) with-owner owner (object):
+	#      sensorRange (double).
+	 #     sensorRange = (controller get-defines) get-sensorRange. 
+   
+	      #if ((struct get-type) == 0) : 
+	#	 return (new MultiRaySensor init-with id (struct get-id)
+	#			         direction (struct get-direction) max-distance sensorRange
+	#	                         with-owner owner with-numberOfRays 6 and-aperture 50).
+		 
+	 #     if ((struct get-type) == 1) : 
+	#	 return (new AreaSensor init-with id (struct get-id)
+	#			         direction (struct get-direction) max-distance sensorRange
+	#	                         with-owner owner and-aperture 55).
+
+	 #     if ((struct get-type) == 2) : 
+	#	 return (new OneRaySensor init-with id (struct get-id)
+	#			         direction (struct get-direction) max-distance sensorRange
+	#	                         and-owner owner).
+		                         
+	 #     if ((struct get-type) == 4) : 
+	#	 return (new ML_AreaSensor init-with id (struct get-id)
+	#			         direction (struct get-direction) max-distance sensorRange 
+	#			         with-owner owner
+	#			         with-mlRayNum 3 with-mlAperture 40
+	#			         and-aperture 55).
+
+	 #     if ((struct get-type) == 3) : 
+	#	 return (new AreaSensorPlus init-with 
+	#				 id                 (struct get-id)
+	#			         direction          (struct get-direction) 
+	#				 max-distance       sensorRange
+	#	                         with-owner         owner 					
+	#				 with-rayImportance {0.2, 0.6, 0.2}  
+	#				 with-rayIntensity  {1.4, 1, 1.4}  
+	#				 and-aperture       50).
+					 
+	#	 if ((struct get-type) == 5) : 
+	#	 return (new AreaSensorPlus2 init-with 
+	#				 id                 (struct get-id)
+	#			         direction          (struct get-direction) 
+	#				 max-distance       sensorRange
+	#	                         with-owner         owner 					
+	#				 with-rayImportance {0.2, 0.6, 0.2}  
+	#				 with-rayIntensity  {1.4, 1, 1.4}  
+	#				 with-aperture       40
+	#				 and-areaAperture	 60).
+
+ 	#	if ((struct get-type) == 6) : 
+	#	 return (new AreaSensor init-with 				# sensormodell for ISWARM!!!
+	#				id                 (struct get-id)
+	#				direction          (struct get-direction) 
+	#				max-distance       sensorRange
+	#				with-owner         owner 					
+	#				and-aperture		90).
+					
+	#	if ((struct get-type) == 8) : 					# sensorModell for activeWall
+	#	 return (new AreaSensor init-with 
+	#	 					id 			(struct get-id)
+	#			         		direction 	(struct get-direction) 
+	#			         		max-distance 	sensorRange
+	#	                         with-owner 	owner 
+	#	                         and-aperture 	360).
+		
+		
+	 #     if ((struct get-type) == 10) : 
+	#	 return (new IRSensorCone init id  (struct get-id)
+	#				  owner owner
+	#				  direction (struct get-direction)
+	#				  color (0,0,0)).
+
+	 #     if ((struct get-type) == 11) : 
+	#	 return (new IRSensorOneRay init id  (struct get-id)
+	#				    owner owner
+	#				    direction (struct get-direction)
+	#				    color (0,0,0)).
+              
+              if ((struct get-type) == 12) : 
+		 return (new IRSensorPolygon init id  (struct get-id)
+					  owner owner
+					  direction (struct get-direction)).
+              
+              if ((struct get-type) == 13) : 
+		 return (new BeamerSensor init id  (struct get-id)
+					  owner owner
+					  direction (struct get-direction)).
+				
+              if ((struct get-type) == 14) : 
+		 return (new LightSensor init id  (struct get-id)
+					  owner owner).
+            
+              if ((struct get-type) == 15) : 
+		 return (new TouchSensor init id  (struct get-id)
+					  owner owner).
+            
+              if ((struct get-type) == 16) : 
+		 return (new ColorSensor init id  (struct get-id)
+					  owner owner
+					  direction (struct get-direction)).
+
+	#      if ((struct get-type) == 254) : {
+	 #        #print "in 254".
+	#	 #print |(struct get-settings)|.
+	#	 if(|(struct get-settings)| < 1): {
+	#	   print "Empty list - no pheromone for Sensor defined.".
+	#	   return 0.
+	#	 }
+
+		 #print (struct get-settings){0}.
+		 #(controller pause).	
+
+
+	#	 return (new PheromoneSensor init-with id (struct get-id)
+	#			         direction (struct get-direction) 
+	#				 max-distance sensorRange 
+	#				 pheromoneClass ((struct get-settings){0})
+	#	                         and-owner owner).
+	 #     }
+
+					 
+					 	      
+	#      if ((struct get-type) == 255) : 
+	#	 return (new simpleSensor init-with id (struct get-id)
+	#			         direction (struct get-direction) max-distance sensorRange
+	#	                         and-owner owner).
+	      
+}

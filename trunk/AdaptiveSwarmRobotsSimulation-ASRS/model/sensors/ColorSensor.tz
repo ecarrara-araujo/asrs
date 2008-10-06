@@ -1,0 +1,78 @@
+@include "asrs/ASRSAutonomousConfig.tz" 
+
+Abstract: ColorSensor {
+
+    + variables:
+        id (int).
+        owner(object).
+        direction(vector).
+        obstacles(list).
+        obstacle(object).
+        neighbors(list).
+        neighbor(object).
+        distanceNeighbor(double).
+        shortestDistanceNeighbor(double).
+        shortestNeighbor(object).
+        mat_rotR(matrix).
+        mat_rotL(matrix).
+      
+    + to init id i(int) owner o(object) direction d(vector):
+        id=i.
+        owner=o.
+        direction=d.
+        mat_rotR=[(cos(PI/12),0,(-1)*sin(PI/12)),(0,1,0),(sin(PI/12),0,cos(PI/12))].
+        mat_rotL=[(cos((-1)*PI/12),0,(-1)*sin((-1)*PI/12)),(0,1,0),(sin((-1)*PI/12),0,cos((-1)*PI/12))].
+        #Save all obstacles
+        obstacles=(all Obstacle).
+        neighbors=(all MovingObstacle).
+        foreach obstacle in obstacles:{
+            push obstacle onto neighbors.
+        }
+        return self.        
+    
+    #Function for compatibility with other sensors
+    + to update-position:
+        return.
+    
+    + to get-color:
+        shortestDistanceNeighbor=5.5.
+        shortestNeighbor=0.
+        #Search in all obstacles and movingObstacles to get the nearest one
+        foreach neighbor in neighbors:{
+            if((neighbor is a "BeamerSensor") || (neighbor is a "IRSensorPolygon") || (neighbor is a "LightSensor") || (neighbor is a "TouchSensor")):{
+            }else{
+                distanceNeighbor=|(neighbor raytrace from-location (owner get-location)+((LENGTH_ROBOT/2)*(owner get-rotation)*direction) with-direction (owner get-rotation)*direction)|.
+                if(distanceNeighbor>0 && distanceNeighbor<shortestDistanceNeighbor):{
+                    shortestDistanceNeighbor=distanceNeighbor.
+                    shortestNeighbor=neighbor.
+                }
+                distanceNeighbor=|(neighbor raytrace from-location (owner get-location)+((LENGTH_ROBOT/2)*(owner get-rotation)*direction) with-direction (owner get-rotation)*mat_rotR*direction)|.
+                if(distanceNeighbor>0 && distanceNeighbor<shortestDistanceNeighbor):{
+                    shortestDistanceNeighbor=distanceNeighbor.
+                    shortestNeighbor=neighbor.
+                }
+                distanceNeighbor=|(neighbor raytrace from-location (owner get-location)+((LENGTH_ROBOT/2)*(owner get-rotation)*direction) with-direction (owner get-rotation)*mat_rotL*direction)|.
+                if(distanceNeighbor>0 && distanceNeighbor<shortestDistanceNeighbor):{
+                    shortestDistanceNeighbor=distanceNeighbor.
+                    shortestNeighbor=neighbor.
+                }
+            }
+        }
+        if(shortestNeighbor!=0):{
+            return (shortestNeighbor get-color).     
+        }else{
+            return (-1,-1,-1).
+        }
+    
+    #Functions to get variables        
+    + to get-id:
+        return id.
+    
+    + to get-owner:
+        return owner.
+    
+    #Functions to set variables        
+    + to clear-variables:
+        return.
+    
+}          

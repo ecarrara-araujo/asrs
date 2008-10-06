@@ -1,0 +1,64 @@
+@include "basics/basicSensorModel.tz"
+
+@use Abstract.
+
+Abstract : BasicModel {
+%  
+
+	+ variables:
+		factory       (object).
+
+		walkerShape, irshape, wheelshape, helpwshape   (object).
+		walkerLeftWheel, walkerRightWheel (object).
+		walkerTexture (object).
+		numberSensors (int).
+		sensorList    (list).
+		hoodSize      (double).
+
+	+ to init:
+%  
+		factory = new basicSensorFactory.		
+
++ section "Mobile Platform Shape"
+%  
+
+	+ to get-walker-shape:
+%  
+		return walkerShape.
+
+	+ to get-walker-texture:
+%  
+		return walkerTexture.
+
+	+ to get-irsensor-shape:
+%  
+		return irshape.
+
+	+ to get-wheel-shape:
+%  
+		return wheelshape.
+
+	+ to get-helpw-shape:
+%  
+		return helpwshape.
+
++ section "Sensor Model"
+%  
+
+	+ to get-number-of-sensors:
+%  
+		return numberSensors.
+
+	+ to get-sensor with-id id (int) with-owner owner (object):
+%  
+		if (id < |sensorList|) :
+		   return (factory get-sensor with-struct (sensorList{id}) with-owner owner).
+		printf "Sensor with id ". printf id. printf " does not exist".
+		return 0.
+		     
+
+	+ to get-hoodsize:
+%  
+		return hoodSize.		
+
+}

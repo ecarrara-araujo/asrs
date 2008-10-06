@@ -1,0 +1,91 @@
+@use Drawing.
+
+@include "asrs/ASRSAutonomousConfig.tz"  
+
+Abstract: LightSensor {
+
+    + variables:
+        id (int).
+        owner(object).
+        shape(object).
+        lights(list).
+        light(object).
+        lightPercentage(double).
+        lightReturn(double).
+        dMin(double).
+        dMax(double).
+        a,b,x(double).
+        positionLeftSensor(vector).
+        positionRightSensor(vector).
+        
+       
+    + to init id i(int) owner o(object):
+        id=i.
+        owner=o.
+        return self.        
+    
+    + to update-position:
+        return.
+        
+    #Get the received light by sensor situated in left side
+    + to get-left-light:
+        positionLeftSensor=(owner get-location)+(0,LENGTH_ROBOT/2,0)+((-1)*LENGTH_ROBOT/4)*(owner get-rotation)*(0,0,1).
+        lights=(controller get-lights).         #Get all light of the stage
+        lightReturn=0.
+        foreach light in lights:{
+            dMin=((light get-location)::y - LENGTH_ROBOT).              #Proyection of light
+            dMax=|(dMin/cos((light get-light-apertureAngle)))|.         #Maximun distance within the light coverage
+            #lightPercentage is a curve with expression y=ax+b
+            a=(100/(dMin-(1)*dMax)).
+            b=(-1)*((100*dMax)/(dMin-(1)*dMax)).
+            x=|((light get-location)-(positionLeftSensor))|.
+            lightPercentage=a*x+b.
+            if (lightPercentage<0):{
+                lightPercentage=0.
+            }else{
+                lightReturn=lightReturn+lightPercentage.
+            }
+        }
+        if(lightReturn==0):{
+            return -1.
+        }else{
+            return lightReturn.
+        }
+    
+    #Get the received light by sensor situated in right side
+    + to get-right-light:
+        positionRightSensor=(owner get-location)+(0,LENGTH_ROBOT/2,0)+(LENGTH_ROBOT/4)*(owner get-rotation)*(0,0,1).
+        lights=(controller get-lights).
+        lightReturn=0.
+        foreach light in lights:{
+            dMin=((light get-location)::y -LENGTH_ROBOT).               #Proyection of light
+            dMax=|(dMin/cos((light get-light-apertureAngle)))|.         #Maximun distance within the light coverage
+            #lightPercentage is a curve with expression y=ax+b
+            a=(100/(dMin-(1)*dMax)).
+            b=(-1)*((100*dMax)/(dMin-(1)*dMax)).
+            x=|((light get-location)-(positionRightSensor))|.
+            lightPercentage=a*x+b.
+            if (lightPercentage<0):{
+                lightPercentage=0.
+            }else{
+                lightReturn=lightReturn+lightPercentage.
+            }
+        }
+        if(lightReturn==0):{
+            return -1.
+        }else{
+            return lightReturn.
+        }
+    
+    #Functions to get variables        
+    + to get-id:
+        return id.
+    
+    + to get-owner:
+        return owner.
+
+    #Functions to set variables        
+    + to clear-variables:
+        return.
+    
+}          

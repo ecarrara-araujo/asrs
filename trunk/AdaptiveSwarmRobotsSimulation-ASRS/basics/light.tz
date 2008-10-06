@@ -1,0 +1,17 @@
+@use Mobile.
+@include "asrs/ASRSAutonomousConfig.tz" 
+
+Mobile: Light{
+    + variables:
+        lightApertureAngle(double).
+        
+    + to init position p(vector):
+        lightApertureAngle=LIGHT_APERTURE_ANGLE.
+        self set-shape to (new Sphere init-with radius 2).
+        self move to p.
+        self set-color to (1,1,0).  
+        return self.
+    
+    + to get-light-apertureAngle:
+        return lightApertureAngle.
+}

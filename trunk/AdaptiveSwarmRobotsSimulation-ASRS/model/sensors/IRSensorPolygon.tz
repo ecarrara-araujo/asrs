@@ -1,0 +1,190 @@
+@use Shape.
+@use Mobile.
+@include "asrs/ASRSAutonomousConfig.tz" 
+
+Mobile:IRSensorPolygon {
+
+    + variables:
+        id (int).
+        owner(object).
+        direction(vector).
+        shape(object).
+        is_obstacle(int).
+        is_neighbor(int).
+        able_to_communicate(int).
+        mat_rotR(matrix).
+        mat_rotL(matrix).
+        robotsInside(list).
+        objectInside(list).
+        allowToComm(int).
+		
+        
+    + to init id i(int) owner o(object) direction d(vector):
+        id=i.
+        owner=o.
+        direction=d.
+        is_obstacle=0.
+        is_neighbor=0.
+        able_to_communicate=0.
+        mat_rotR=[(cos(PI/12),0,(-1)*sin(PI/12)),(0,1,0),(sin(PI/12),0,cos(PI/12))].
+        mat_rotL=[(cos((-1)*PI/12),0,(-1)*sin((-1)*PI/12)),(0,1,0),(sin((-1)*PI/12),0,cos((-1)*PI/12))].
+        allowToComm=1.
+        objectInside={}.
+        robotsInside={}.
+        shape=(new polygonShape init identifier id).    #Create the shape of the sensor
+        self set-color to (1,0,0).
+        if (id==1 || id==2 || id==6):{ #Sensors in front
+            self set-transparency to IR_TRANSPARENCY.
+        }else{                        #Sensors in rear
+            self set-transparency to IR_TRANSPARENCY/2.
+        }
+        self set-shape to shape.        #Asign the sensor shape to the sensor
+        self update-position.           #Set the sensor in the correct position
+        if(SHOW_SENSORS_SHAPES==0):{
+            self make-invisible.
+        }
+        #handle-collisions for different objects
+        self handle-collisions with-type "MovingObstacle" with-method "collision-Obstacle".
+        self handle-collisions with-type "Obstacle" with-method "collision-Obstacle".
+        self handle-collisions with-type (owner get-type) with-method "collision-Robot".
+        return self.        
+    
+    #Set the sensor to the correct position with regard to the robot
+    + to update-position:
+        self set-rotation to (owner get-rotation).
+        if (id==1 || id==2 || id==6):{     #Sensors in front
+            self relative-rotate around-axis (0,1,0) by angle((0,0,1),direction).
+        }else{                            #Sensors in rear
+            self relative-rotate around-axis (0,1,0) by ((-1)*angle((0,0,1),direction)).
+        }
+        self move to (owner get-location)+(13.9)*(owner get-rotation)*direction.
+        if (id==1):{
+            self set-color to (0,0,0).
+        }
+
+    #Functions to get variables        
+    + to get-id:
+        return id.
+    
+    + to get-owner:
+        return owner.
+    
+    + to get-shape:
+        return shape.
+
+    + to get-direction:
+        return direction.
+    
+    + to getObjectInside:
+        return objectInside.
+
+    + to isThereObstacle:
+        return is_obstacle.
+
+    + to isThereNeighbor:
+        return is_neighbor.
+    
+    #Functions to set variables 
+    + to setNoObjectInside:
+        objectInside={}.
+        robotsInside={}.
+        
+    + to setThereIsNotObstacle:
+        is_obstacle=0.
+        
+    + to setThereIsNotNeighbor:
+        is_neighbor=0.
+
+    + to clear-variables:
+        self setThereIsNotObstacle.
+        self setThereIsNotNeighbor.
+        self setNoObjectInside.
+
+    #Functions for handle-collision 
+    + to collision-Obstacle obstacleInside obstacleInside(object):
+        is_obstacle=1.
+        push obstacleInside onto objectInside.
+
+
+    + to collision-Robot robotInsideDetected robotInsideDetected(object):
+        if(robotInsideDetected!=owner):{
+            is_obstacle=1.    #Flag for movement
+            is_neighbor=1.      #Flag for communications.
+            push robotInsideDetected onto objectInside.
+        }
+}          
+
+#Class to create the polygon shape os the sensor
+CustomShape: polygonShape{
+
+    + variables:
+        vertex(list).
+            
+    + to init identifier id(int):
+        if(id==1):{
+            vertex{0}=(-2,1,-10.202).
+            vertex{1}=(-6.659,1,-2.267).
+            vertex{2}=(-8.03,1,4.97).
+            vertex{3}=(-5.694,1,9).
+            vertex{4}=(0,1,12.25).
+            vertex{5}=(5.694,1,9).
+            vertex{6}=(8.03,1,4.97).
+            vertex{7}=(6.659,1,-2.267).
+            vertex{8}=(2,1,-10.202).
+            vertex{9}=(-2,-1,-10.202).
+            vertex{10}=(-6.659,-1,-2.267).
+            vertex{11}=(-8.03,-1,4.97).
+            vertex{12}=(-5.694,-1,9).
+            vertex{13}=(0,-1,12.25).
+            vertex{14}=(5.694,-1,9).
+            vertex{15}=(8.03,-1,4.97).
+            vertex{16}=(6.659,-1,-2.267).
+            vertex{17}=(2,-1,-10.202).
+            self add-face with-vertex-list { vertex{0}, vertex{9}, vertex{10}, vertex{1}}.
+            self add-face with-vertex-list { vertex{1}, vertex{10}, vertex{11}, vertex{2}}.
+            self add-face with-vertex-list { vertex{2}, vertex{11}, vertex{12}, vertex{3}}.
+            self add-face with-vertex-list { vertex{3}, vertex{12}, vertex{13}, vertex{4}}.
+            self add-face with-vertex-list { vertex{4}, vertex{13}, vertex{14}, vertex{5}}.
+            self add-face with-vertex-list { vertex{5}, vertex{14}, vertex{15}, vertex{6} }.
+            self add-face with-vertex-list { vertex{6}, vertex{15}, vertex{16}, vertex{7} }.
+            self add-face with-vertex-list { vertex{7}, vertex{16}, vertex{17}, vertex{8} }.
+            self add-face with-vertex-list { vertex{8}, vertex{17}, vertex{9}, vertex{0} }.
+            self add-face with-vertex-list { vertex{0}, vertex{1}, vertex{2}, vertex{3}, vertex{4}, vertex{5}, vertex{6}, vertex{7}, vertex{8}}.
+            self add-face with-vertex-list { vertex{9}, vertex{10}, vertex{11}, vertex{12}, vertex{13}, vertex{14}, vertex{15}, vertex{16}, vertex{17}}.
+            self finish-shape with-density 1.0.
+            return self.
+        }else{
+            vertex{0}=(-1.5,1,-11.202).
+            vertex{1}=(-6.659,1,-2.267).
+            vertex{2}=(-8.03,1,4.97).
+            vertex{3}=(-5.694,1,9).
+            vertex{4}=(0,1,12.25).
+            vertex{5}=(5.694,1,9).
+            vertex{6}=(8.03,1,4.97).
+            vertex{7}=(6.659,1,-2.267).
+            vertex{8}=(1.5,1,-11.202).
+            vertex{9}=(-1.5,-1,-11.202).
+            vertex{10}=(-6.659,-1,-2.267).
+            vertex{11}=(-8.03,-1,4.97).
+            vertex{12}=(-5.694,-1,9).
+            vertex{13}=(0,-1,12.25).
+            vertex{14}=(5.694,-1,9).
+            vertex{15}=(8.03,-1,4.97).
+            vertex{16}=(6.659,-1,-2.267).
+            vertex{17}=(1.5,-1,-11.202).
+            
+            self add-face with-vertex-list { vertex{0}, vertex{9}, vertex{10}, vertex{1}}.
+            self add-face with-vertex-list { vertex{1}, vertex{10}, vertex{11}, vertex{2}}.
+            self add-face with-vertex-list { vertex{2}, vertex{11}, vertex{12}, vertex{3}}.
+            self add-face with-vertex-list { vertex{3}, vertex{12}, vertex{13}, vertex{4}}.
+            self add-face with-vertex-list { vertex{4}, vertex{13}, vertex{14}, vertex{5}}.
+            self add-face with-vertex-list { vertex{5}, vertex{14}, vertex{15}, vertex{6} }.
+            self add-face with-vertex-list { vertex{6}, vertex{15}, vertex{16}, vertex{7} }.
+            self add-face with-vertex-list { vertex{7}, vertex{16}, vertex{17}, vertex{8} }.
+            self add-face with-vertex-list { vertex{8}, vertex{17}, vertex{9}, vertex{0} }.
+            self add-face with-vertex-list { vertex{0}, vertex{1}, vertex{2}, vertex{3}, vertex{4}, vertex{5}, vertex{6}, vertex{7}, vertex{8}}.
+            self add-face with-vertex-list { vertex{9}, vertex{10}, vertex{11}, vertex{12}, vertex{13}, vertex{14}, vertex{15}, vertex{16}, vertex{17}}.
+            self finish-shape with-density 1.0.
+            return self.
+        }
+}

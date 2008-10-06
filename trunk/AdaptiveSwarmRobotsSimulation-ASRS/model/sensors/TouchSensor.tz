@@ -1,0 +1,64 @@
+@use Shape.
+@include "asrs/ASRSAutonomousConfig.tz" 
+
+Mobile: TouchSensor {
+
+    + variables:
+        id (int).
+        owner(object).
+        is_obstacle(int).
+        objectInside(object).
+      
+    + to init id i(int) owner o(object):
+        id=i.
+        owner=o.
+        self set-shape to (owner get-shape).
+        self make-invisible.
+        #Handle-collision for motion and communication functions
+        self handle-collisions with-type "Obstacle" with-method "collision-Obstacle".
+        self handle-collisions with-type "MovingObstacle" with-method "collision-Obstacle".
+        self handle-collisions with-type "JasmineIII" with-method "collision-Robot".
+        self update-position.
+        return self.        
+    
+    #Set the sensor to the correct position with regard to the robot
+    + to update-position:
+        self move to (owner get-location).
+        return.
+    
+    #Functions for handle-collisions
+    + to collision-Obstacle obstacleInside obstacleInside(object):
+        is_obstacle=1.
+        objectInside=obstacleInside.
+        
+    + to collision-Robot robotInsideDetected robotInsideDetected(object):
+        if(robotInsideDetected!=owner):{
+            is_obstacle=1.
+            objectInside=robotInsideDetected.
+        }
+        
+    #Functions to get variables
+    + to isThereObstacle:
+        return is_obstacle.
+
+    + to get-object-inside:
+        return objectInside.
+        
+    + to get-id:
+        return id.
+    
+    + to get-owner:
+        return owner.
+
+    #Functions to set variables
+    + to clear-variables:
+        self setThereIsNotObstacle.
+        objectInside=0.
+        return.
+
+    + to setThereIsNotObstacle:
+        is_obstacle=0.
+
+    
+    
+}          

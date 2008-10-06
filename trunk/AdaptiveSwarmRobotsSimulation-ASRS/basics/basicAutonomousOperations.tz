@@ -1,0 +1,158 @@
+@define ANGLE_STEP 0.017453292.            #Angle turn by the robot en each iteration (around 1 degree)
+
+Abstract: basicAutonomousOperations {
+
+    + variables:
+        initial_location(vector).
+        actual_location(vector).
+        final_location(vector).
+        initial_direction(vector).
+        actual_distance(double).
+        distanceForMoving(double).
+        temporalDistance(double).
+        errorDistance(double).
+        temporalVelocity(int).
+        angle_radians(float).
+        firstTime(int).
+        temporalDirection(int).
+        temporalOppositeDirection(int).
+        temporalRobot(object).
+        initialVector(vector).
+        actualVector(vector).
+        angleForTurning(float).
+        actualAngle(float).
+        errorAngle(double).
+        velocityToSet(double).
+        firstTimeMoving(int).
+	
+    + to init:
+        firstTime=1.
+        firstTimeMoving=1.
+            
+    + to stop robot robot(object):
+        robot set-velocity to (0,0,0).
+        robot set-rotational-velocity to (0,0,0).
+        robot setTWIflag.
+    
+    #It moves a distance d with a velocity v. It needs one or more iterations. It works with continueMoving function
+    + to move robot robot(object) distance d(double) velocity v(int):
+        if(d==0 && v<128):{	#Move continuosly backwards
+           velocityToSet=(-0.307086614)*v+(40).
+           robot set-rotational-velocity to (0, 0, 0).
+           robot set-velocity to (velocityToSet)*(-1)*((robot get-rotation)*(1,0,0)).
+        }
+        if(d==0 && v>127):{	#Move continuosly forwards
+            velocityToSet=(0.307086614)*v+(-38.30708661).
+            robot set-rotational-velocity to (0, 0, 0).
+            robot set-velocity to (velocityToSet)*((robot get-rotation)*(1,0,0)).
+               
+           
+        }
+        if(d!=0 && v<128):{     #Move a distance backwards
+            if(firstTimeMoving==1):{
+                initial_direction=(robot get-rotation)*(-1,0,0).
+                initial_location=(robot get-location).
+                final_location=initial_location+(d*initial_direction).
+                distanceForMoving=|(final_location)-(initial_location)|.
+                temporalRobot=robot.
+                temporalDistance=d.
+                temporalVelocity=v.
+                firstTimeMoving=0.
+            }
+            velocityToSet=(-0.307086614)*v+(40).
+            robot set-rotational-velocity to (0, 0, 0).
+            robot set-velocity to (velocityToSet)*(-1)*((robot get-rotation)*(1,0,0)).
+        }
+        if(d!=0 && v>127):{     #Move a distance forwards
+            if(firstTimeMoving==1):{
+                initial_direction=(robot get-rotation)*(1,0,0).
+                initial_location=(robot get-location).
+                final_location=initial_location+(d*initial_direction).
+                distanceForMoving=|(final_location)-(initial_location)|.
+                temporalRobot=robot.
+                temporalDistance=d.
+                temporalVelocity=v.
+                firstTimeMoving=0.
+            }
+            velocityToSet=(0.307086614)*v+(-38.30708661).
+            robot set-rotational-velocity to (0, 0, 0).
+            robot set-velocity to (velocityToSet)*((robot get-rotation)*(1,0,0)).
+        }
+    
+    #Function called if the robot has not complete its movement in one iteration
+    + to continueMoving robot robot(object):
+        actual_location=(robot get-location).
+        actual_distance=|(actual_location)-(initial_location)|.
+        if(actual_distance>=distanceForMoving):{        #Correcting if the last movement has execeeded the original distance 
+            errorDistance=|(actual_distance)-(distanceForMoving)|.
+            robot set-rotational-velocity to (0,0,0).
+            robot set-velocity to (0,0,0).
+            firstTimeMoving=1.
+            if(temporalVelocity>127):{
+                robot move to ((robot get-location)-errorDistance*(robot get-rotation)*(1,0,0)).
+                actual_location=(robot get-location).
+                actual_distance=|(actual_location)-(initial_location)|.
+            }else{
+                robot move to ((robot get-location)+errorDistance*(robot get-rotation)*(1,0,0)).
+                actual_location=(robot get-location).
+                actual_distance=|(actual_location)-(initial_location)|.
+            }
+            robot setTWIflag.   #set TWIsynchronozation flag.
+            robot clearMovingFlag.       #clear turningFlag.
+        }else{
+            self move robot robot distance temporalDistance velocity temporalVelocity.
+        }
+    
+    #It rotates angle degrees in direction d with a angular movement because the gravity center of the robot
+    #is not in its center exactly. It needs one or more iterations. It works with continueRotating function.
+    + to turn robot robot(object) direction d(int) degrees angle(int):
+        angle_radians=(angle*(PI/180)).
+        if(firstTime==1):{
+            initialVector=(robot get-rotation)*(1,0,0).
+            angleForTurning=angle_radians.
+            temporalRobot=robot.
+            temporalDirection=d.
+            if(temporalDirection==LEFT):{
+                temporalOppositeDirection=RIGHT.
+            }else{
+                temporalOppositeDirection=LEFT.
+            }
+        }
+        
+        if(d==LEFT):{
+            robot set-velocity to (robot get-rotation)*(1,0,0).
+            robot set-rotational-velocity to (0,VELOCITY_TURN,0).
+        }else{
+            robot set-velocity to (robot get-rotation)*(1,0,0).
+            robot set-rotational-velocity to (-1)*(0,VELOCITY_TURN,0).
+        }
+        firstTime=0.
+    
+    #Function called if the robot has not complete its rotation in one iteration
+    + to continueRotating robot robot(object):
+        actualVector=(robot get-rotation)*(1,0,0).
+        actualAngle=angle(initialVector,actualVector).
+        if(actualAngle>angleForTurning):{       #Correcting if the last turn has execeeded the original angle 
+            errorAngle=(actualAngle-(angleForTurning)).
+            self turnFix robot robot direction temporalOppositeDirection degrees (errorAngle*180/PI).
+            robot set-rotational-velocity to (0,0,0).
+            robot set-velocity to (0,0,0).
+            firstTime=1.
+            robot setTWIflag.             #set TWIsynchronozation flag.
+            robot clearTurningFlag.       #clear turningFlag.
+        }else{
+            self turn robot robot direction temporalDirection degrees 0.
+        }
+	
+    #It turns the robot around its y-axis without movement.
+    + to turnFix robot robot(object) direction d(int) degrees angle(double):
+        angle_radians=(angle*(PI/180)).
+        if(d==LEFT):{
+            robot set-velocity to (0,0,0).
+            robot relative-rotate around-axis (0,1,0) by angle_radians.
+        }else{
+            robot set-velocity to (0,0,0).
+            robot relative-rotate around-axis (0,1,0) by ((-1)*angle_radians).	
+        }
+        robot setTWIflag.
+}
