@@ -25,7 +25,8 @@ basicControl : JasmineIIIController {
             robot0(object).
             nRobots(int).
             i,j,k,l(int).
-			posCount (int).  #Controla o posicionamento inicial de cada robô 
+			posCountX (int).  #Controla o posicionamento inicial de cada robô 
+		    posCountZ (int).  #Controla o posicionamento inicial de cada robô
             s1,s2,s(string).
             film(object).
             columns(int).
@@ -74,18 +75,28 @@ basicControl : JasmineIIIController {
                 }
             }    
             for i=0,i<|robots|,i++:{
-                if((robots{i} get-behavioralRole)==0):{
+                if((robots{i} get-behavioralRole)==BHV_NORMAL):{
                     robots{i} save-color to (0,0,0).
                     robots{i} set-color to (0,0,0).
                 }
-                if((robots{i} get-behavioralRole)==1):{
+                if((robots{i} get-behavioralRole)==BHV_SCOUT):{
                     robots{i} save-color to (1,1,0).
                     robots{i} set-color to (1,1,0).
                 }
-                if((robots{i} get-behavioralRole)==2):{
+                if((robots{i} get-behavioralRole)==BHV_LEADER):{
                     robots{i} save-color to (1,1,1).
                     robots{i} set-color to (1,1,1).
                 }
+				#trecho adicionado para comportamentos de base e objetivo
+				
+				if((robots{i} get-behavioralRole)==BHV_BASE):{ #Base
+                    robots{i} save-color to (0,0,1).
+                    robots{i} set-color to (0,0,1).
+				}
+				if((robots{i} get-behavioralRole)==BHV_OBJ):{ #Objeto
+                    robots{i} save-color to (0,1,1).
+                    robots{i} set-color to (0,1,1).
+				}
             }
             print "Setting up the Robot(s).".
                         
@@ -94,15 +105,45 @@ basicControl : JasmineIIIController {
             rows=nRobots/(columns+1).
             i=0.
             j=0.
-			posCount = 0.
+			posCountX = 0.
+			posCountZ = 0.
             foreach robot in robots:{
                 #robot move to (random[(controller get-xbound)-(7*LENGTH_ROBOT)]+2*LENGTH_ROBOT,LENGTH_ROBOT/2,random[(controller get-zbound)-(7*LENGTH_ROBOT)]+2*LENGTH_ROBOT).
 				#robot move to ((controller get-xbound) - (posCount * LENGTH_ROBOT*5), LENGTH_ROBOT/2,5).
 				#robot move to ((controller get-xbound) - (posCount * LENGTH_ROBOT * 8) , LENGTH_ROBOT/2,5).
-				robot move to (((controller get-xbound)/NUMBER_ROBOTS*posCount)+10, LENGTH_ROBOT/2,10).
+				#robot move to (((controller get-xbound)/NUMBER_ROBOTS*posCount)+10, LENGTH_ROBOT/2,10).
+				
+				#*******************posicionamento S.tz*********************************#
+				robot move to ((controller get-xbound)/(NUMBER_ROBOTS - 2)/2*posCountX+10, LENGTH_ROBOT/2,posCountZ*10 + 10).
 				robot RotateFix direction 1 degrees 90.
-				posCount = posCount + 1.
-				printf posCount.
+				posCountX = posCountX + 1.
+				if(posCountX == (NUMBER_ROBOTS + 2)/2):
+				{
+					posCountZ = 2.
+					posCountX = 0.
+				}
+				if((robot get-behavioralRole) == BHV_BASE):
+				{
+					robot move to (POS_X_BASE, LENGTH_ROBOT/2, POS_Z_BASE).
+					robot RotateFix direction 1 degrees 90.
+				}
+				
+				if((robot get-behavioralRole) == BHV_OBJ):
+				{
+					robot move to (POS_X_OBJ, LENGTH_ROBOT/2, POS_Z_OBJ ).
+				}
+				
+				#**********************posicionamento S.tz********************************#
+				#robot move to ((controller get-xbound)/NUMBER_ROBOTS/2*posCountX+10+(controller get-xbound)/2, LENGTH_ROBOT/2,posCountZ*5 + 5).
+				#robot RotateFix direction 1 degrees 90.
+				#posCountX = posCountX + 1.
+				#if(posCountX == NUMBER_ROBOTS/2):
+				#{
+				#	posCountZ = 2.
+				#	posCountX = 0.
+				#}
+				
+				printf posCountX.
                 robot update-sensors-position.
                # if((robot get-behavioralRole)==2):{     #Leader robot
                #     robot move to((controller get-xbound)/4,LENGTH_ROBOT/2,(controller get-zbound)/2).
@@ -113,11 +154,11 @@ basicControl : JasmineIIIController {
             
             #Setting the lights. 
             #You can add new lights. Add new lights to the list "ligths" (like the commented line).
-            #lights{0}=(new Light init position ((controller get-xbound)/2,20,(controller get-zbound)/2)).
-            lights{0}=(new Light init position (20,10,10)).
-            #lights{1}=(new Light init position (50,10,20)).
+            #lights{0}=(new Light init position ((controller get-xbound)/2,80,(controller get-zbound)/2)).
+            #lights{0}=(new Light init position (20,10,10)).
+            #lights{1}=(new Light init position (0,80,0)).
             
-            print "Simulation is running.".	
+            print "Simulation is running.".
         
         + to get-lights:
             return lights.
@@ -126,7 +167,7 @@ basicControl : JasmineIIIController {
         + to catch-key-b-down:
             print "Begin the Simulation".
             foreach robot in robots:{
-                robot start.
+				robot start.
              }
              
         # For the remote control implementation.
@@ -154,5 +195,6 @@ basicControl : JasmineIIIController {
 
 #Class for adding obstacles to the Stage (these obstacles can be moved).
 Mobile:MovingObstacle{
+
 }
 

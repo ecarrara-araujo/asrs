@@ -13,22 +13,44 @@
 @define LIGHT_APERTURE_ANGLE 30.        
 
 #About simulation (It is possible to change)
-@define STAGE_FILENAME "asrs_stages/VS.sce".
+#*********************** V S *****************************
+#@define STAGE_FILENAME "asrs_stages/VS.sce".		#Name of the file for creating the Stage.
+#@define NUMBER_ROBOTS 10.                       #Number of robots.
+#@define POS_X_BASE 10.
+#@define POS_Z_BASE 10.
+#@define POS_X_OBJ 100.
+#@define POS_Z_OBJ 100.
+#@define NUMBER_ROBOTS 10.                #Number of robots.
+
+#*********************** S *******************************
+@define STAGE_FILENAME "asrs_stages/S.sce".		#Name of the file for creating the Stage
+@define LENGTH_ROBOT 2.48.
+@define POS_X_BASE 50.
+@define POS_Z_BASE 20.
+@define POS_X_OBJ 200.
+@define POS_Z_OBJ 200.
+@define NUMBER_ROBOTS 22.                #Number of robots.
+
 @define MOVIE_FILENAME "asrs_movies/simulation_15_09_06.avi".	#The file is saved in the breve directory.
 @define RECORD_VIDEO 0.                 #Value 0: not record video; Value 1: Record video (only valid for Breve 2.4)
-@define NUMBER_ROBOTS 2.                #Number of robots.
+
 @define ENERGY_CONSUMPTION_PER_TURN 0.0001.  #Energy consumption per turn -> 0.01 enough for ~35 simulation turns
-                                                                           #0.001 enough for ~350 simulation turns  
-                                                                           #0.0001 low (enough for ~3500 simulation turns.
-@define REGISTER_BEHAVIORS "060100".    #Register for behavioral roles (al least write a character even 0).
-                                        #bit 0-1: Number of robots of behavioral role type 0 (normal robot).
-                                        #bit 2-3: Number of robots of behavioral role type 1 (scout robot).
-                                        #bit 4-5: Number of robots of behavioral role type 2 (new role).
-                                        #bit i-i+1: Number of robots of behavioral role type (i/2-1) with role type always >=0.
-                                        #Types of behavioral Roles: 0 normal robot, 1 scout robot
-                                        #If it is not specified, a new robot has normal role.
-                                        #Example: N_TYPES_BEHAVIOR "020308"  -->  bit 0 and 1: 2 robots with role 0 (normal robot).
-                                                                                # bit 2 and 3: 3 robots with role 1 (scout robot).
+																		   
+#Trecho adicionado para controlar o comportamento dos tipos de robôs
+@define BHV_NORMAL 0.
+@define BHV_SCOUT  1.
+@define BHV_LEADER 2.
+@define BHV_BASE   3.
+@define BHV_OBJ    4.
+@define REGISTER_BEHAVIORS "0601000101".    #Register for behavioral roles (al least write a character even 0).
+                                        	#bit 0-1: Number of robots of behavioral role type 0 (normal robot).
+                                        	#bit 2-3: Number of robots of behavioral role type 1 (scout robot).
+                                        	#bit 4-5: Number of robots of behavioral role type 2 (new role).
+                                        	#bit i-i+1: Number of robots of behavioral role type (i/2-1) with role type always >=0.
+                                        	#Types of behavioral Roles: 0 normal robot, 1 scout robot
+                                        	#If it is not specified, a new robot has normal role.
+                                        	#Example: N_TYPES_BEHAVIOR "020308"  -->  bit 0 and 1: 2 robots with role 0 (normal robot).
+                                                                              # bit 2 and 3: 3 robots with role 1 (scout robot).
                                                                                 # bit 4 and 5: 8 robots with role 2 (new behavior).
 #About robots   (It is possible to change)
 @define AVOIDING 10. #20                    #Rotation for collision avoiding: small - fine avoiding (always >10), large: - random motion (always < 40)

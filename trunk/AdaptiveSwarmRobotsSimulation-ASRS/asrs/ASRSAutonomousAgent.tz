@@ -23,21 +23,21 @@ basicAutonomousAgent : JasmineIII {
         }
         
         # For implementing the energy value.
-        if(energyValue<140):{                                   # interruption into critical energy state                                
-            self save-color to (1,0,0).                         # indicate low energetical level -> red            
-            self set-color to (1,0,0).
+        #if(energyValue<140):{                                   # interruption into critical energy state                                
+        #    self save-color to (1,0,0).                         # indicate low energetical level -> red            
+        #    self set-color to (1,0,0).
             #statusPlanLast=statusPlan.
             #statusPlan=8.
 
-            if(energyValue<120):{                               # energetic death
-                self stopRobot.                                 # stop                                        
-                self save-color to (1,1,1).                     # indicate energetical death -> white           
-                self set-color to (1,1,1).
-                statusMain{7}="0".                              # no communication      
-                statusPlanLast=0.                               # stop all activities        
-                statusPlan=0.                                   # stop all activities
-            }
-        }
+        #    if(energyValue<120):{                               # energetic death
+        #        self stopRobot.                                 # stop                                        
+        #        self save-color to (1,1,1).                     # indicate energetical death -> white           
+        #        self set-color to (1,1,1).
+        #        statusMain{7}="0".                              # no communication      
+        #        statusPlanLast=0.                               # stop all activities        
+        #        statusPlan=0.                                   # stop all activities
+        #    }
+        #}
         
         #ECa#Incluindo chamada ao brain.
         if(behavioralRole==0):{
@@ -76,7 +76,22 @@ basicAutonomousAgent : JasmineIII {
         #        statusComm1[0]=1.	 #send 1 times
         #        statusComm2="01111110".	 #send on all channels
         #}
-    
+
+		if(behavioralRole==BHV_BASE):{	#base
+			sendMessage1="00000001".
+			sendMessage2="".
+			send16=0.
+			statusComm1[0]=1.
+			statusComm2="01111110".
+		}
+		
+		if(behavioralRole==BHV_OBJ):{	#objeto
+			sendMessage1="00000002".
+			sendMessage2="".
+			send16=0.
+			statusComm1[0]=1.
+			statusComm2="01111110".
+		}
         
     #This executes plans
     + to ExecutePlan:
@@ -192,6 +207,15 @@ basicAutonomousAgent : JasmineIII {
             statusPlan=statusPlanLast.
             return.
         }
+		if(statusPlan==17):{	#Base State
+			statusPlan=17.
+			return.
+		}
+		if(statusPlan==18):{	#Object State
+			statusPlan=18.
+			return.
+		}
+			
 
 #------------------------------ User defined activities, please add your plans ----------------------#
         #if(statusPlan==30):{     #User Plan 1
@@ -259,6 +283,13 @@ basicAutonomousAgent : JasmineIII {
         statusMain="00000101".      #Read proximity, listening
         statusComm2="01111110".     #All sensors are activated.
         #statusPlan=3.               #Move plan
+		if(behavioralRole==BHV_BASE):{		#base
+			statusPlan=0.
+			
+		}	
+		if(behavioralRole==BHV_OBJ):{		#objeto
+			statusPlan=0.
+		}
         isStart=1.
         
         adaptiveBrain = new AdaptiveBrain.
