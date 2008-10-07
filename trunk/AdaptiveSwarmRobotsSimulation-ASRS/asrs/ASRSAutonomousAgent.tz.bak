@@ -1,0 +1,276 @@
+@include "basics/basicAutonomousAgent.tz"
+@include "AdaptiveBrain.tz"                 #ECa#Incluido referencia para o arquivo do componente de cerebro adaptativo.
+
+basicAutonomousAgent : JasmineIII {
+    + variables:
+        # Here you can add some variables ONLY for the simulation.
+        # Read the documentation for knowing which variables are
+        # given by the system.
+        adaptiveBrain (object).             #ECa#Referência para o objeto de cérebro adaptativo#
+        infoRegs (string).                  #ECa#Registradores de estado#
+            
+    
+    #Constructor method
+    + to init-with id i (int) behavioralRole br(int):
+        return (super init-with id i behavioralRole br).
+    
+      
+    #This performs analyse of commands and generate plans  
+    + to Planning:
+        #To redirect to the internal state when a basic command is executed (software interruptions).
+        if((self TWI_decode)>0):{       #Pending Command 
+            return.
+        }
+        
+        # For implementing the energy value.
+        if(energyValue<140):{                                   # interruption into critical energy state                                
+            self save-color to (1,0,0).                         # indicate low energetical level -> red            
+            self set-color to (1,0,0).
+            #statusPlanLast=statusPlan.
+            #statusPlan=8.
+
+            if(energyValue<120):{                               # energetic death
+                self stopRobot.                                 # stop                                        
+                self save-color to (1,1,1).                     # indicate energetical death -> white           
+                self set-color to (1,1,1).
+                statusMain{7}="0".                              # no communication      
+                statusPlanLast=0.                               # stop all activities        
+                statusPlan=0.                                   # stop all activities
+            }
+        }
+        
+        #ECa#Incluindo chamada ao brain.
+        if(behavioralRole==0):{
+          if(statusComm2{7}=="1"):{
+            infoRegs = "00000000".
+            statusPlanLast=statusPlan.
+            statusPlan= adaptiveBrain get-robot-plan ReceivedMessage receivMessage1 InformationRegisters infoRegs.
+          }
+        }
+        
+        if(behavioralRole==1):{
+          sendMessage1="10000000".      #send the first byte 33
+          sendMessage2="".	            #the second byte 0
+          send16=0.		                  #send only 8 bits	
+          statusComm1[0]=1.	            #send 1 times
+          statusComm2="01111110".	      #send on all channels
+          statusPlanLast=statusPlan.
+          statusPlan=3.
+        }
+        
+        
+        # EXAMPLE OF HOW PLANNING A PLAN DEPENDING ON THE NEW MESSAGES RECEIVED
+        # AND THE BEHAVIOR ROLE OF THE ROBOT
+        
+        #if (statusComm2{7}=="1"):{               	                #there are new input messages 
+        #    if (receivMessage1=="33000000"):{        #analyse received signal  
+        #            statusPlanLast=statusPlan.	        #Save the last state
+        #            statusPlan=30.                     #Go to a user Plan
+        #    }
+        #}
+        
+        #if (behavioralRole==1):{	 #when my behavioralRole == scout 	
+        #        sendMessage1="33000000". #send the first byte 33
+        #        sendMessage2="".	 #the second byte 0
+        #        send16=0.		 #send only 8 bits	
+        #        statusComm1[0]=1.	 #send 1 times
+        #        statusComm2="01111110".	 #send on all channels
+        #}
+    
+        
+    #This executes plans
+    + to ExecutePlan:
+#------------------------------ Basic Plans, please do not change them ------------------------------#
+        if(statusPlan==0):{     #idle sleep mode    
+            self stopRobot.
+            return.
+        }
+        if(statusPlan==1):{     #do nothing state
+            return.
+        }
+        if(statusPlan==2):{     #stop state   
+            self stopRobot.
+            statusPlan=0.
+            return.
+        }
+        if(statusPlan==3):{     #move state
+            self moveRobot distance 0.
+            errorState=0.
+            askTouch=0.
+            statusPlan=1.
+            return.
+        }
+        if(statusPlan==4):{     #rotate LEFT state
+            self Rotate direction LEFT degrees avoiding.
+            statusPlan=1.
+            return.
+        }
+        if(statusPlan==5):{     #rotate RIGHT state
+            self Rotate direction RIGHT degrees avoiding.
+            statusPlan=1.
+            return.
+        }
+        if(statusPlan==6):{                             #collision avoiding state
+            if(localSensors[2]>localSensors[6]):{       #Detect where the obstacle is farer.
+                self Rotate direction LEFT degrees avoiding.
+            }else{
+                self Rotate direction RIGHT degrees avoiding.
+            }
+            statusPlan=7.
+            return.
+        }
+        if(statusPlan==7):{             #decision point in collision avoiding
+            errorState++.
+            if(statusMain{6}=="0"):{    #Robot has not finished rotation
+                return.
+            }
+            if(statusMain{1}=="1"):{      #There is an obstacle
+                statusPlan=6.             #Collision avoiding
+            }else{
+                statusPlan=3.             #Move
+            }
+            if(errorState>70 && askTouch==0):{  #Go backwards when too many collision and high touch value
+                self stopRobot.
+                askTouch=1.
+                self GetTouchValue.
+            }
+            return.
+        }
+        if(statusPlan==8):{     #low energy state
+            self stopRobot.
+            statusPlanLast=statusPlan.
+            return.
+        }
+        if(statusPlan==9):{     #touch stablished or lost state
+            statusPlan=statusPlanLast.
+            return.
+        }
+        if(statusPlan==10):{     #Receive value from the touch sensor    
+            if(touchValue==1):{
+                if(askTouch==1):{
+                    self SetVelocity velocity 4.        #Go reverse
+                    self moveRobot distance 10.
+                    statusMain{6}="0".                  #Clear synchronization flag
+                }
+                if(statusMain{6}=="0"):{
+                    return.
+                }else{
+                    askTouch=0.
+                    self SetVelocity velocity 1.        
+                    statusPlan=3.                       #Move
+                }
+            }
+            statusMain{6}="1".                          #Set synchronization flag
+            self SetVelocity velocity 1.                #Maximun velocity forwards
+            statusPlan=3.                               #Move
+            askTouch=0.
+            return.
+        }
+        if(statusPlan==11):{     #Receive value from the energy sensor    
+            statusPlan=statusPlanLast.
+            return.
+        }
+        if(statusPlan==12):{     #Received new message state    
+            self stopRobot.
+            statusPlan=0.
+            return.
+        }
+        if(statusPlan==13):{     #S1 sensor value
+            statusPlan=statusPlanLast.
+            return.
+        }
+        if(statusPlan==14):{     #state when TIMER is fired    
+            statusPlan=statusPlanLast.
+            return.
+        }
+		
+        if(statusPlan==15):{     #S2 sensor value  
+            statusPlan=statusPlanLast.
+            return.
+        }
+        if(statusPlan==16):{     #Color sensor value
+            statusPlan=statusPlanLast.
+            return.
+        }
+
+#------------------------------ User defined activities, please add your plans ----------------------#
+        #if(statusPlan==30):{     #User Plan 1
+        #    statusMain{7}="0".
+        #    self stopRobot.
+        #    self set-color to (1,0,0).
+        #    self save-color to (1,0,0).
+        #    self SendMessage8 message "99000000" numberSend 9 channels "01111100".
+        #    return.
+        #}
+        
+# THIS METHOD IS EXECUTED IN EACH ITERATION OF THE SIMULATION. DO NOT CHANGE IT!!                    
+
+    #Begin the autonomous cycle. This method is called in each iteration
+    + to iterate:  
+        if(isStart!=1):{        #For do nothing before push key "b".
+            return.
+        }
+        #This part is used when the delay is active. Do not them it!
+        if(delayActive):{
+            return.
+        }
+        #End of delay method.
+
+        #This part is used by the simulation for turning, please do not change it!
+        if(turningFlag==1):{
+            exec continueRotating robot self.
+            return.
+        }
+        # End of Turning part
+		
+		#This part is used by the simulation for turning, please do not change it!
+        if(movingFlag==1):{
+            exec continueMoving robot self.
+            return.
+        }
+        # End of Turning part
+        
+    ###############################################################################    
+    #--------------------------------- MAIN LOOP ---------------------------------#
+    ###############################################################################
+    #--------------------------------- Sensing part ------------------------------#
+        if(statusMain{5}=="1"):{  #Read proximity Flag is active
+            self ReadProximity.
+        }
+    #----------------------------- Communication part ----------------------------#
+        if ((statusMain{7})=="1"):{     #Listening Flag
+            self ReceiveMessages.
+        }
+        if (statusComm1[0]>0):{       #Send when more than 1 time in register
+            self SendMessages.   	
+        }
+    #------------------------------ Planning part --------------------------------#
+        self Planning.                  #Planning a Plan
+    #----------------------------- Executing part --------------------------------#
+        self ExecutePlan.              #Execute Plan
+    
+    ###############################################################################    
+    #------------------------------- END MAIN LOOP -------------------------------#
+    ###############################################################################
+    
+    # Method called when push the key "b" at the beginning of the simulation. You can modify it in
+    # order to adapt the first plan of the robot.
+    + to start:
+        statusMain="00000101".      #Read proximity, listening
+        statusComm2="01111110".     #All sensors are activated.
+        #statusPlan=3.               #Move plan
+        isStart=1.
+        
+        adaptiveBrain = new AdaptiveBrain.
+        adaptiveBrain init-with-db robotId myID.
+        statusPlan = adaptiveBrain get-robot-plan ReceivedMessage "00000000" InformationRegisters "00000000".
+        
+        #Example of change initial position and initial color.
+        #if(myID==0):{
+        #    self save-color to (0,1,0).
+        #    self set-color to (0,1,0).
+        #    self SendMessage8 message "33000000" numberSend (NUMBER_ROBOTS-(1)) channels "01111100".
+        #    statusPlan=0.
+        #    self move to (20,LENGTH_ROBOT/2,40).
+        #}
+}
