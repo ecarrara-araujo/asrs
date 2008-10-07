@@ -1,0 +1,158 @@
+#CHANGE THIS LINE TO YOUR DIRECTORY IN WHICH THE SIMULATION IS SET. PLEASE WRITE THE FULL PATH
+#@path "D:\examples\JasmineSwarmSimulator(v7)"
+#@path "C:\Users\ecarrara\Desktop\swarmrobot\JasmineSwarmSimulator(v7)"
+@path "I:\TCC_dev\AdaptiveSwarmRobotsSimulation-ASRS"
+
+#PLEASE DO NOT CHANGE!
+@use Abstract.
+@use Movie.
+@use File.
+@include "basics/basicController.tz" 
+@include "basics/light.tz" 
+@include "asrs/ASRSAutonomousConfig.tz" 
+
+#CHANGE THIS LINE TO THE RELATIVE PATH OF THE FILE WHICH CONTAINS YOUR OWN AGENT.
+@include "asrs/ASRSAutonomousAgent.tz"
+
+
+#Begin the Controller class.
+Controller JasmineIIIController.             
+
+basicControl : JasmineIIIController {
+	+ variables:
+            robots(list).
+            robot(object).
+            robot0(object).
+            nRobots(int).
+            i,j,k,l(int).
+			posCount (int).  #Controla o posicionamento inicial de cada robô 
+            s1,s2,s(string).
+            film(object).
+            columns(int).
+            rows(int).
+            exec(object).
+            movie(object).
+            n_robots(string).
+            n_behaviors(int).
+            randomColor(vector).
+            lights(list).
+            file(object).
+            
+
+	+ to init:
+            if (RECORD_VIDEO==1):{
+                movie=new Movie.
+                movie record to MOVIE_FILENAME.
+            }
+            #defines set-labFile to STAGE_FILENAME.
+
+            #We are initializing everything
+            super init-all stageFile STAGE_FILENAME.
+            model=new JasmineIIImodel.
+            
+            #Create the different robots
+            k=0.
+            n_robots=REGISTER_BEHAVIORS.
+            n_behaviors=n_robots{0}.
+            randomColor=random[(1,1,1)].
+                        
+            for i=0,i<NUMBER_ROBOTS,i++:{
+                robots{i}=(new JasmineIII init-with id i behavioralRole 0).
+            }
+            k=0.
+            j=0.
+            l=0.
+            
+            for i=0,i<|REGISTER_BEHAVIORS|,i=i+2:{
+                s1=REGISTER_BEHAVIORS{i}.
+                s2=REGISTER_BEHAVIORS{i+1}.
+                s="$s1$s2".
+                j=s.
+                for l=0,l<j,l++:{
+                    robots{k} set-behavioralRole roleType (i/2).
+                    k++.
+                }
+            }    
+            for i=0,i<|robots|,i++:{
+                if((robots{i} get-behavioralRole)==0):{
+                    robots{i} save-color to (0,0,0).
+                    robots{i} set-color to (0,0,0).
+                }
+                if((robots{i} get-behavioralRole)==1):{
+                    robots{i} save-color to (1,1,0).
+                    robots{i} set-color to (1,1,0).
+                }
+                if((robots{i} get-behavioralRole)==2):{
+                    robots{i} save-color to (1,1,1).
+                    robots{i} set-color to (1,1,1).
+                }
+            }
+            print "Setting up the Robot(s).".
+                        
+            #Set the robots within scenario.
+            columns=((controller get-xbound)/(10*LENGTH_ROBOT))-(1).
+            rows=nRobots/(columns+1).
+            i=0.
+            j=0.
+			posCount = 0.
+            foreach robot in robots:{
+                #robot move to (random[(controller get-xbound)-(7*LENGTH_ROBOT)]+2*LENGTH_ROBOT,LENGTH_ROBOT/2,random[(controller get-zbound)-(7*LENGTH_ROBOT)]+2*LENGTH_ROBOT).
+				#robot move to ((controller get-xbound) - (posCount * LENGTH_ROBOT*5), LENGTH_ROBOT/2,5).
+				#robot move to ((controller get-xbound) - (posCount * LENGTH_ROBOT * 8) , LENGTH_ROBOT/2,5).
+				robot move to (((controller get-xbound)/NUMBER_ROBOTS*posCount)+10, LENGTH_ROBOT/2,10).
+				robot RotateFix direction 1 degrees 90.
+				posCount = posCount + 1.
+				printf posCount.
+                robot update-sensors-position.
+               # if((robot get-behavioralRole)==2):{     #Leader robot
+               #     robot move to((controller get-xbound)/4,LENGTH_ROBOT/2,(controller get-zbound)/2).
+               #     robot update-sensors-position.
+               # }
+             }
+            robot0=robots{0}.   #robot 0 is used for the remote control.
+            
+            #Setting the lights. 
+            #You can add new lights. Add new lights to the list "ligths" (like the commented line).
+            #lights{0}=(new Light init position ((controller get-xbound)/2,20,(controller get-zbound)/2)).
+            lights{0}=(new Light init position (20,10,10)).
+            #lights{1}=(new Light init position (50,10,20)).
+            
+            print "Simulation is running.".	
+        
+        + to get-lights:
+            return lights.
+            
+        # For the beginning the simulation.
+        + to catch-key-b-down:
+            print "Begin the Simulation".
+            foreach robot in robots:{
+                robot start.
+             }
+             
+        # For the remote control implementation.
+        + to catch-key-i-down:
+            robot0 SetVelocity velocity 150.
+            robot0 moveRobot distance 0.
+        + to catch-key-m-down:
+            robot0 SetVelocity velocity 105.
+            robot0 moveRobot distance 0.
+        + to catch-key-l-down:
+            robot0 Rotate direction RIGHT degrees 30.
+        + to catch-key-j-down:
+            robot0 Rotate direction LEFT degrees 30.
+        + to catch-key-k-down:
+            robot0 stopRobot.
+        + to catch-key-r-down:  # Go to remote control mode
+            robot0 remoteControl.
+        + to catch-key-a-down:  # Go to autonomus cycle
+            robot0 antonomusCycle.
+
+        + to iterate:
+            super iterate.
+            
+}
+
+#Class for adding obstacles to the Stage (these obstacles can be moved).
+Mobile:MovingObstacle{
+}
+
