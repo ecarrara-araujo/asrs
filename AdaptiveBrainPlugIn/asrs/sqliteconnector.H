@@ -22,7 +22,6 @@ public:
 	int executarVoidQuery(const char *strQuery, int value = 3);
 	int executarQuery(const char *strQuery, int (*callback) (void*,int,char**,char**), int value = 3);
 	
-	static int callback(void *NotUsed, int argc, char **argv, char **azColName);
 	static std::string gerarNomeDB(const char* p_cPrefixo);
 	
 

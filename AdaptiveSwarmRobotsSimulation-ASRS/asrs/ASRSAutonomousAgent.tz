@@ -7,7 +7,10 @@ basicAutonomousAgent : JasmineIII {
         # Read the documentation for knowing which variables are
         # given by the system.
         adaptiveBrain (object).             #ECa#Referência para o objeto de cérebro adaptativo#
-        infoRegs (string).                  #ECa#Registradores de estado#
+        infoRegs1 (string).                 #ECa#Registradores de estado#
+        infoRegs2 (string).                 #ECa#Registradores de estado#
+        feromoneos (string).                #ECa#Campo para manipulacao de feromoneos#
+        
             
     
     #Constructor method
@@ -40,58 +43,34 @@ basicAutonomousAgent : JasmineIII {
         #}
         
         #ECa#Incluindo chamada ao brain.
-        if(behavioralRole==0):{
-          if(statusComm2{7}=="1"):{
-            infoRegs = "00000000".
-            statusPlanLast=statusPlan.
-            statusPlan= adaptiveBrain get-robot-plan ReceivedMessage receivMessage1 InformationRegisters infoRegs.
-          }
+        
+        if(behavioralRole==BHV_BASE):{
+          statusPlan=20.
+          return.
         }
         
-        if(behavioralRole==1):{
-          sendMessage1="10000000".      #send the first byte 33
-          sendMessage2="".	            #the second byte 0
-          send16=0.		                  #send only 8 bits	
-          statusComm1[0]=1.	            #send 1 times
-          statusComm2="01111110".	      #send on all channels
-          statusPlanLast=statusPlan.
-          statusPlan=3.
+        if(behavioralRole==BHV_OBJ):{
+          statusPlan=25.
+          return.
         }
         
+        statusPlanLast=statusPlan.
         
-        # EXAMPLE OF HOW PLANNING A PLAN DEPENDING ON THE NEW MESSAGES RECEIVED
-        # AND THE BEHAVIOR ROLE OF THE ROBOT
+        if(statusComm2{7}=="1" && receive16==2):{
+          infoRegs2{0}="1".
+        }
+        else
+        {
+          infoRegs2{0}="0".
+        }
         
-        #if (statusComm2{7}=="1"):{               	                #there are new input messages 
-        #    if (receivMessage1=="33000000"):{        #analyse received signal  
-        #            statusPlanLast=statusPlan.	        #Save the last state
-        #            statusPlan=30.                     #Go to a user Plan
-        #    }
-        #}
-        
-        #if (behavioralRole==1):{	 #when my behavioralRole == scout 	
-        #        sendMessage1="33000000". #send the first byte 33
-        #        sendMessage2="".	 #the second byte 0
-        #        send16=0.		 #send only 8 bits	
-        #        statusComm1[0]=1.	 #send 1 times
-        #        statusComm2="01111110".	 #send on all channels
-        #}
-
-		if(behavioralRole==BHV_BASE):{	#base
-			sendMessage1="00000001".
-			sendMessage2="".
-			send16=0.
-			statusComm1[0]=1.
-			statusComm2="01111110".
-		}
-		
-		if(behavioralRole==BHV_OBJ):{	#objeto
-			sendMessage1="00000002".
-			sendMessage2="".
-			send16=0.
-			statusComm1[0]=1.
-			statusComm2="01111110".
-		}
+        if(statusComm2{7}=="1"):{
+          statusPlan= adaptiveBrain get-robot-plan ReceivedMessage receivMessage1 InformationRegisters infoRegs1.
+        }
+        else
+        {
+          statusPlan= adaptiveBrain get-robot-plan ReceivedMessage "00000000" InformationRegisters infoRegs1.
+        }
         
     #This executes plans
     + to ExecutePlan:
@@ -203,20 +182,133 @@ basicAutonomousAgent : JasmineIII {
             statusPlan=statusPlanLast.
             return.
         }
+        
         if(statusPlan==16):{     #Color sensor value
             statusPlan=statusPlanLast.
             return.
         }
-		if(statusPlan==17):{	#Base State
-			statusPlan=17.
-			return.
-		}
-		if(statusPlan==18):{	#Object State
-			statusPlan=18.
-			return.
-		}
-			
-
+        
+        #ECa#Plans for the projected behavior
+        if(statusPlan==20):{ #base
+          sendMessage1 = "11111111".                 #mensagem de identificação de base
+          send16 = 0.	                               #envia 16 bits
+          statusComm1[0] = 1.	                       #envia 1 vez
+          statusComm2 = "01111110".	                 #envia em todos os canais.
+          statusMain{7} = "0".                       #desabilita o recebimento de mensagens
+          return.
+        }
+        
+        if(statusPlan==25):{ #objeto
+          infoRegs1{6} = "1".                        #mensagem de inicializado (ri)
+          sendMessage1 = "00000010".                 #mensagem de identificação de objeto (oe)
+          sendMessage2 = FEROMONEOS_VALOR_MAX.       #mensagem contendo feromoneos
+          sendMessage2 += "000000".
+          send16 = 2.	                               #envia 16 bits
+          statusComm1[0] = 1.	                       #envia 1 vez
+          statusComm2 = "01111110".	                 #envia em todos os canais.
+          statusMain{7} = "0".                       #habilita o recebimento de mensagens
+          return.
+        }
+        
+        if(statusPlan==30):{ #Inicializacao
+          infoRegs1{6} = "1".                                           #mensagem de inicializado (ri)
+          return.
+        }
+        
+        if(statusPlan==40):{ #Parado
+          infoRegs1{3} = "0".                                           #Seta flag de robo em movimento para 0  
+          sendMessage1 = "00100000".                                    #mensagem de inicio de movimento (cm)
+          send16 = 0.	                                                  #envia 8 bits
+          statusComm1[0] = 1.                                         #envia 1 vez
+          statusComm2 = "01111110".	                                    #envia em todos os canais
+          statusMain{7} = "1".                                          #habilita o recebimento de mensagens
+          statusPlan = 2.                                               #plan interno de robo parado
+          return.
+        }
+        
+        if(statusPlan==50):{ #Movendo-se
+          infoRegs1{3} = "1".                                           #Seta flag de robo em movimento para 1
+          sendMessage1 = "00001100".                                    #mensagem de robo em movimento (rm)
+          send16 = 0.	                                                  #envia 8 bits
+          statusComm1[0] = 1.	                                          #envia 1 vez
+          statusComm2 = "01111110".	                                    #envia em todos os canais
+          statusMain{7} = "1".                                          #habilita o recebimento de mensagens
+          #statusPlan = 3.                                               #plan interno de movimentacao do robo
+          self moveRobot distance 0.
+          errorState=0.
+          askTouch=0.
+          return.
+        }
+        
+        if(statusPlan==60):{ #Lendo Feromoneos
+          #transfere feromoneos para o campo de manipulacao.
+          feromoneos{0} = receivMessage2{1}.
+          feromoneos{1} = receivMessage2{2}.
+          
+          #seta registradores de informacao com os valores de feromoneos lidos
+          if(feromoneos == FEROMONEOS_VALOR_MAX):{
+            infoRegs1{4} = feromoneos{1}.            #Flag de feromoneos em nivel maximo.
+          }
+          else
+          {
+            infoRegs1{4} = feromoneos{0}.
+          }
+          
+          if(feromoneos == FEROMONEOS_VALOR_MIN):{
+            infoRegs1{5} = feromoneos{1}.            #Flag de feromoneos em nivel minimo.
+          }
+          else
+          {
+            infoRegs1{5} = feromoneos{0}.
+          }
+          
+          #diminiu intesidade do feromoneo
+          if(feromoneos - 1 > FEROMONEOS_VALOR_MIN):{
+            feromoneos = feromoneos - 1.
+          }
+          else
+          {
+            feromoneos = "00".
+          }
+          
+          return.
+        }
+        
+        if(statusPlan==70):{ #Waypoint
+          self stopRobot.                            #para o robo
+          self LED_playB.                            #acende o led azul para identificar visualmente o waypoint
+          infoRegs1 = "00000000".
+          infoRegs1{0} = "1".                        #seta o flag de disseminacao de feromoneos
+          infoRegs1{6} = "1".                        #robo inicializado
+          statusMain{7} = "0".                       #desabilita o recebimento de mensagens
+          return.
+        }
+        
+        if(statusPlan==80):{ #Disseminando Feromoneos
+          sendMessage1 = "00000100".                 #mensagem de identificação de waypoint (we)
+          sendMessage2 = feromoneos.        	       #mensagem contendo feromoneos
+          sendMessage2 += "000000".
+          send16 = 2.	                               #envia 16 bits
+          statusComm1[0] = 1.	                       #envia 1 vez
+          statusComm2 = "01111110".	                 #envia em todos os canais.
+          statusMain{7} = "1".                       #habilita o recebimento de mensagens
+          return.
+        }
+        
+        if(statusPlan==90):{ #Interagindo com Robô
+          return.
+        }
+        
+        if(statusPlan==100):{ #Monitorando em direção ao objeto
+          self LED_playG.                            #acende o led azul para identificar visualmente o monitoramento em direcao ao objeto
+          return.
+        }
+        
+        if(statusPlan==110):{ #Monitorando em direção oposta ao objeto
+          self LED_playR.                            #acende o led vermelho para identificar visualmente o monitoramento para longe do objeto
+          return.
+        }
+          
 #------------------------------ User defined activities, please add your plans ----------------------#
         #if(statusPlan==30):{     #User Plan 1
         #    statusMain{7}="0".
@@ -268,6 +360,8 @@ basicAutonomousAgent : JasmineIII {
         if (statusComm1[0]>0):{       #Send when more than 1 time in register
             self SendMessages.   	
         }
+        
+        infoRegs2{0} = "0".             #ECa#Resetando o flag de feromoneos disponiveis
     #------------------------------ Planning part --------------------------------#
         self Planning.                  #Planning a Plan
     #----------------------------- Executing part --------------------------------#
@@ -283,18 +377,22 @@ basicAutonomousAgent : JasmineIII {
         statusMain="00000101".      #Read proximity, listening
         statusComm2="01111110".     #All sensors are activated.
         #statusPlan=3.               #Move plan
-		if(behavioralRole==BHV_BASE):{		#base
-			statusPlan=0.
-			
-		}	
-		if(behavioralRole==BHV_OBJ):{		#objeto
-			statusPlan=0.
-		}
+        
         isStart=1.
         
+        infoRegs1 = "00000000".
+        infoRegs2 = "00000000".
         adaptiveBrain = new AdaptiveBrain.
         adaptiveBrain init-with-db robotId myID.
-        statusPlan = adaptiveBrain get-robot-plan ReceivedMessage "00000000" InformationRegisters "00000000".
+        statusPlan = adaptiveBrain get-robot-plan ReceivedMessage "00000000" InformationRegisters infoRegs1.
+        
+        if(behavioralRole==BHV_BASE):{		#base
+    			statusPlan=0.
+    		}	
+        
+    		if(behavioralRole==BHV_OBJ):{		  #objeto
+    			statusPlan=0.                  #ECa#Testando Feromoneos.#Colocar plano de emissao de feromoneos
+    		}
         
         #Example of change initial position and initial color.
         #if(myID==0):{
