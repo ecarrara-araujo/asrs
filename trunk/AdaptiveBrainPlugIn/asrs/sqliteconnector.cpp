@@ -41,23 +41,20 @@ int SQLiteConnector::executarVoidQuery(const char *strQuery, int iValue)
 	  int rc;
 	  if( iValue!=3 ){
 	    //fprintf(stderr, "Usage: %s DATABASE SQL-STATEMENT\n", value);
-	    //exit(1);
 		  return 1;
 	  }
 	  rc = sqlite3_open(this->m_strNomeDB.c_str(), &db);
 	  if( rc ){
 	    //fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
 	    sqlite3_close(db);
-	    //exit(1);
 	    return 1;
 	  }
-	  rc = sqlite3_exec(db, strQuery, callback, 0, &zErrMsg);
+	  rc = sqlite3_exec(db, strQuery, 0, 0, &zErrMsg);
 	  if( rc!=SQLITE_OK ){
 	    //fprintf(stderr, "SQL error: %s\n", zErrMsg);
 	    sqlite3_free(zErrMsg);
 	  }
 	  sqlite3_close(db);
-	  //system("pause");
 	  return 0;
 }
 
@@ -67,14 +64,12 @@ int SQLiteConnector::executarQuery(const char *strQuery, int (*callback) (void*,
 	  int rc;
 	  if( iValue !=3 ){ 
 	    //fprintf(stderr, "Usage: %s DATABASE SQL-STATEMENT\n", value);
-	    //exit(1);
 		return 1;
 	  }
 	  rc = sqlite3_open(this->m_strNomeDB.c_str(), &db);
 	  if( rc ){
 	    //fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
 	    sqlite3_close(db);
-	    //exit(1);
 	    return 1;
 	  }
 	  rc = sqlite3_exec(db, strQuery, callback, 0, &zErrMsg);
@@ -83,18 +78,6 @@ int SQLiteConnector::executarQuery(const char *strQuery, int (*callback) (void*,
 	    sqlite3_free(zErrMsg);
 	  }
 	  sqlite3_close(db);
-	  //system("pause");
-	  //return EC_OK;
-	  return 0;
-}
-
-//Ricardo - Funcao de Retorno da execução das Querys
-int SQLiteConnector::callback(void *NotUsed, int argc, char **argv, char **azColName){
-  int i;
-  for(i=0; i<argc; i++){
-    //printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
-  }
-  //printf("\n");
   return 0;
 }
 

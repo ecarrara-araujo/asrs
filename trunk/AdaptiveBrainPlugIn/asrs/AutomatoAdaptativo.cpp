@@ -31,20 +31,37 @@ void AutomatoAdaptativo::robotInitialize()
 
 	//inicializacao do conjunto de regras, estados e condicoes disponiveis.
 	//implementar...
-	//condicoes
-	this->m_SQLConnector->executarVoidQuery("INSERT INTO Condicoes VALUES('a','0000000000000000');");
-	this->m_SQLConnector->executarVoidQuery("INSERT INTO Condicoes VALUES('b','1000000000000000');");
-	this->m_SQLConnector->executarVoidQuery("INSERT INTO Condicoes VALUES('c','2000000000000000');");
-
 	//Estados
-	this->m_SQLConnector->executarVoidQuery("INSERT INTO Estados VALUES(0);");
-	this->m_SQLConnector->executarVoidQuery("INSERT INTO Estados VALUES(1);");
-	this->m_SQLConnector->executarVoidQuery("INSERT INTO Estados VALUES(2);");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Estados VALUES(1,40);");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Estados VALUES(0,30);");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Estados VALUES(2,50);");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Estados VALUES(3,60);");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Estados VALUES(4,70);");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Estados VALUES(5,80);");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Estados VALUES(6,90);");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Estados VALUES(7,100);");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Estados VALUES(8,110);");
+
+	//Condicoes
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Condicoes VALUES('na','0000000000000000');");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Condicoes VALUES('ri','0000000000000010');");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Condicoes VALUES('cm','0010000000000010');");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Condicoes VALUES('pr','03');");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Condicoes VALUES('re','04');");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Condicoes VALUES('rm','05');");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Condicoes VALUES('we','06');");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Condicoes VALUES('oe','07');");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Condicoes VALUES('rp','08');");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Condicoes VALUES('em','09');");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Condicoes VALUES('df','10');");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Condicoes VALUES('vb','11');");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Condicoes VALUES('va','12');");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Condicoes VALUES('vm','13');");
 
 	//Planos
-	this->m_SQLConnector->executarVoidQuery("INSERT INTO Plano VALUES(0,0,'a',0,2,'i');");
-	this->m_SQLConnector->executarVoidQuery("INSERT INTO Plano VALUES(1,0,'b',1,3,'1');");
-	this->m_SQLConnector->executarVoidQuery("INSERT INTO Plano VALUES(3,1,'c',0,2,'1');");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Plano VALUES(0,0,'na',0,'i');");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Plano VALUES(1,0,'ri',1,'i');");
+	this->m_SQLConnector->executarVoidQuery("INSERT INTO Plano VALUES(2,1,'cm',2,'i');");
 
 	//inicializacao da configuracao inicial do automato.
 	this->m_strGrupoAdaptacao = GRUPO_ADAPTATIVO_INICIAL;
