@@ -1,7 +1,7 @@
 #CHANGE THIS LINE TO YOUR DIRECTORY IN WHICH THE SIMULATION IS SET. PLEASE WRITE THE FULL PATH
 #@path "D:\examples\JasmineSwarmSimulator(v7)"
 #@path "C:\Users\ecarrara\Desktop\swarmrobot\JasmineSwarmSimulator(v7)"
-@path "I:\TCC_dev\AdaptiveSwarmRobotsSimulation-ASRS"
+@path "C:\ASRS\AdaptiveSwarmRobotsSimulation-ASRS"
 
 #PLEASE DO NOT CHANGE!
 @use Abstract.
@@ -197,4 +197,3 @@ basicControl : JasmineIIIController {
 Mobile:MovingObstacle{
 
 }
-
