@@ -14,12 +14,12 @@
 
 #About simulation (It is possible to change)
 #*********************** V S *****************************
-#@define STAGE_FILENAME "asrs_stages/VS.sce".		#Name of the file for creating the Stage.
-#@define POS_X_BASE 10.
-#@define POS_Z_BASE 10.
-#@define POS_X_OBJ 100.
-#@define POS_Z_OBJ 100.
-#@define NUMBER_ROBOTS 10.                #Number of robots.
+@define STAGE_FILENAME "asrs_stages/VS.sce".		#Name of the file for creating the Stage.
+@define POS_X_BASE 10.
+@define POS_Z_BASE 10.
+@define POS_X_OBJ 100.
+@define POS_Z_OBJ 100.
+@define NUMBER_ROBOTS 7.                #Number of robots.
 
 #*********************** S *******************************
 #@define STAGE_FILENAME "asrs_stages/S.sce".		#Name of the file for creating the Stage
@@ -31,13 +31,13 @@
 #@define NUMBER_ROBOTS 50.                #Number of robots.
 
 #*********************** TestStages *******************************
-@define STAGE_FILENAME "asrs_stages/S.sce".		#Name of the file for creating the Stage
-@define POS_X_BASE 50.
-@define POS_Z_BASE 20.
-@define POS_X_OBJ 200.
-@define POS_Z_OBJ 200.
-@define NUMBER_ROBOTS 6.                #Number of robots.
-@define FEROMONEOS_VALOR_MAX 10.
+#@define STAGE_FILENAME "stages/StageBasic.sce".		#Name of the file for creating the Stage
+# @define POS_X_BASE 50.
+# @define POS_Z_BASE 20.
+# @define POS_X_OBJ 200.
+# @define POS_Z_OBJ 200.
+# @define NUMBER_ROBOTS 5.                #Number of robots.
+@define FEROMONEOS_VALOR_MAX "03".
 @define FEROMONEOS_VALOR_MIN  1.
 
 @define MOVIE_FILENAME "asrs_movies/simulation_15_09_06.avi".	#The file is saved in the breve directory.
@@ -63,5 +63,6 @@
                                                                               # bit 2 and 3: 3 robots with role 1 (scout robot).
                                                                                 # bit 4 and 5: 8 robots with role 2 (new behavior).
 #About robots   (It is possible to change)
+@define AVOIDING 10.                    #Rotation for collision avoiding: small - fine avoiding (always >10), large: - random motion (always < 40)
 @define BEAMER_CAN_COMMUNICATE 0.       #Value 0: Beamer is not used for communicating; Value 1: Beamer is also used for communicating.
 @define SHOW_SENSORS_SHAPES 1.          #Value 0: Sensors shapes are not visible; Value 1: Display sensor shapes (for debugging).
