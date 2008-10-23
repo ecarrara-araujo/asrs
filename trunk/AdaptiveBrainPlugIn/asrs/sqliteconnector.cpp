@@ -62,7 +62,7 @@ int SQLiteConnector::executarQuery(const char *strQuery, int (*callback) (void*,
 	  sqlite3 *db;
 	  char *zErrMsg = 0;
 	  int rc;
-	  if( iValue !=3 ){ 
+	  if( iValue !=3 ){
 	    //fprintf(stderr, "Usage: %s DATABASE SQL-STATEMENT\n", value);
 		return 1;
 	  }
@@ -78,7 +78,7 @@ int SQLiteConnector::executarQuery(const char *strQuery, int (*callback) (void*,
 	    sqlite3_free(zErrMsg);
 	  }
 	  sqlite3_close(db);
-  return 0;
+	  return 0;
 }
 
 std::string SQLiteConnector::gerarNomeDB(const char* p_cPrefixo)
