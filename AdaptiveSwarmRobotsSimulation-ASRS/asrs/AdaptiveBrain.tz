@@ -11,6 +11,7 @@ Object : AdaptiveBrain {
   + variables:
     brainPointer (pointer).
     iRobotPlan (int).
+    receivedMessages (string).
   
   ###############################################################################    
   # Function: init-with-db
@@ -30,7 +31,10 @@ Object : AdaptiveBrain {
   # Date Created: 20.09.2008
   ###############################################################################
   + to get-robot-plan ReceivedMessage recMsg(string) InformationRegisters infoReg(string):
-    iRobotPlan = AdapBrainGetRobotPlan(brainPointer, recMsg, infoReg).
+    receivedMessages = recMsg.
+    receivedMessages{6} = "0".
+    receivedMessages{7} = "0".
+    iRobotPlan = AdapBrainGetRobotPlan(brainPointer, receivedMessages, infoReg).
     return iRobotPlan.
     
 }
