@@ -11,6 +11,7 @@ basicAutonomousAgent : JasmineIII {
         infoRegs2 (string).                 #ECa#Registradores de estado#
         feromoneos (string).                #ECa#Campo para manipulacao de feromoneos#
         feromoneos_max (string).            #RZ#String criada para enviar a mensagem para o brain
+        calculo (int).                      #guarda o resultado da reducao dos feromoneos.
         
             
     
@@ -75,7 +76,7 @@ basicAutonomousAgent : JasmineIII {
         
         if(infoRegs1{3}!="1"):{
           statusPlan= adaptiveBrain get-robot-plan ReceivedMessage "00000000" InformationRegisters infoRegs1.
-          print "$myID: Plan: $statusPlan StatusComm2{7}: $statusComm2{7} InfoRegs{3}:$infoRegs1{3}.".
+          #print "$myID: Plan: $statusPlan StatusComm2{7}: $statusComm2{7} InfoRegs{3}:$infoRegs1{3}.".
         }
         
     #This executes plans
@@ -197,9 +198,9 @@ basicAutonomousAgent : JasmineIII {
         
         #ECa#Plans for the projected behavior
         if(statusPlan==20):{ #base
-          sendMessage1 = "11111111".                 #mensagem de identificação de base
-          send16 = 0.	                               #envia 16 bits
-          statusComm1[0] = 1.	                       #envia 1 vez
+          #sendMessage1 = "11111111".                 #mensagem de identificação de base
+          #send16 = 0.	                               #envia 16 bits
+          #statusComm1[0] = 1.	                       #envia 1 vez
           statusComm2 = "01111110".	                 #envia em todos os canais.
           statusMain{7} = "0".                       #desabilita o recebimento de mensagens
           return.
@@ -295,15 +296,22 @@ basicAutonomousAgent : JasmineIII {
         }
         
         if(statusPlan==80):{ #Disseminando Feromoneos
-          self stopRobot.                            #para o robo
-          #sendMessage1 = "000001$feromoneos".                 #mensagem de identificação de waypoint (we)
-          sendMessage1 = "00000105".                 #Colocando valor fixo para testar erro
+          if (feromoneos!=FEROMONEOS_VALOR_MIN):{
+            sendMessage1 = "111000$feromoneos".                 #mensagem de identificação de waypoint (VM)
+          }
+          else{
+            sendMessage1 = "110000$feromoneos".                 #mensagem de valor minimo (VB)
+          }
+          #sendMessage1 = "11100000".                 #mensagem de identificação de waypoint (we)
+          #sendMessage1 = "00000105".                 #Colocando valor fixo para testar erro
           #sendMessage2 = feromoneos.        	       #mensagem contendo feromoneos
           #sendMessage2 += "000000".
           send16 = 0.	                               #envia 8 bits
           statusComm1[0] = 1.	                       #envia 1 vez
           statusComm2 = "01111110".	                 #envia em todos os canais.
           statusMain{7} = "0".                       #desabilita o recebimento de mensagens
+          #RZ - Essa linha nao deveria estar aqui. so esta porque alguns robos estao indo direto para o status plan 80 ao invez de passar pelo 70. Assim que resolvermos esse erro, tiramos essa linha daki
+          self stopRobot.                            #para o robo
           return.
         }
          
@@ -350,7 +358,7 @@ basicAutonomousAgent : JasmineIII {
     
     #Inicializando variaveis para nao haver sujeira na hora da comunicacao
         statusComm2{7} = "0".
-        print "$myID: Setado para nao receber chamadas".
+        #print "$myID: Setado para nao receber chamadas".
     
         if(isStart!=1):{        #For do nothing before push key "b".
             return.
@@ -383,7 +391,7 @@ basicAutonomousAgent : JasmineIII {
             self ReadProximity.
         }
     #----------------------------- Communication part ----------------------------#
-        print "$myID: Recebe Mensagem?: statusMain{7}:[$statusMain{7}]". 
+        #print "$myID: Recebe Mensagem?: statusMain{7}:[$statusMain{7}]". 
         if ((statusMain{7})=="1"):{     #Listening Flag
             self ReceiveMessages.
         }
@@ -435,25 +443,25 @@ basicAutonomousAgent : JasmineIII {
         #}
         
         + to trata-feromoneos:
-          calculo (int). #guarda o resultado da reducao dos feromoneos.
           
           #transfere feromoneos para o campo de manipulacao.
           feromoneos{0} = receivMessage1{6}.
           feromoneos{1} = receivMessage1{7}.
           
           #seta registradores de informacao com os valores de feromoneos lidos
-          if(feromoneos == FEROMONEOS_VALOR_MAX):{
+          #RZ - Nao precisa
+          #if(feromoneos == FEROMONEOS_VALOR_MAX):{
             #RZ - teste
             #infoRegs1{4} = "1".            #Flag de feromoneos em nivel maximo.
             #RZ
-          }
-          else
-          {
-            infoRegs1{4} = "0".
-          }
+          #}
+          #else
+          #{
+          #  infoRegs1{4} = "0".
+          #}
           
           if(feromoneos == FEROMONEOS_VALOR_MIN):{
-            infoRegs1{5} = "1".            #Flag de feromoneos em nivel minimo.
+            infoRegs1{5} = "1".            #Flag de feromoneos em nivel minimo. (FM)
           }
           else
           {
@@ -464,7 +472,6 @@ basicAutonomousAgent : JasmineIII {
           if(feromoneos - 1 > FEROMONEOS_VALOR_MIN):{
             calculo  = feromoneos.
             calculo = calculo - 1.
-            print "$myID: feromoneos calculados $calculo".
             if (calculo < 10) :{
               feromoneos = "0$calculo".
             }
@@ -475,8 +482,8 @@ basicAutonomousAgent : JasmineIII {
           }
           else
           {
-            feromoneos = "00".
+            feromoneos = FEROMONEOS_VALOR_MIN.
           }
-          
+          print "$myID: feromoneos calculados $feromoneos".
           return.
 }
