@@ -19,7 +19,7 @@
 @define POS_Z_BASE 10.
 @define POS_X_OBJ 100.
 @define POS_Z_OBJ 100.
-@define NUMBER_ROBOTS 7.                #Number of robots.
+@define NUMBER_ROBOTS 1.                #Number of robots.
 
 #*********************** S *******************************
 #@define STAGE_FILENAME "asrs_stages/S.sce".		#Name of the file for creating the Stage
