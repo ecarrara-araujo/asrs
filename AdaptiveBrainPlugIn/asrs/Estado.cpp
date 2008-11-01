@@ -6,7 +6,7 @@
  */
 #include "Estado.h"
 
-Estado* Estado::sm_pInstance = 0;
+Estado* Estado::sm_pWorkInstance = 0;
 int (*Estado::pRefreshState) (void *NotUsed, int argc, char **argv, char **azColName) = &Estado::refreshStateWrapper;
 
 Estado::Estado(int iCodEstado,int iRobotPlan)
@@ -53,5 +53,5 @@ int Estado::refreshState(void *NotUsed, int argc, char **argv, char **azColName)
 
 int Estado::refreshStateWrapper(void *NotUsed, int argc, char **argv, char **azColName)
 {
-	return Estado::getInstance()->refreshState(NotUsed, argc, argv, azColName);
+	return Estado::sm_pWorkInstance->refreshState(NotUsed, argc, argv, azColName);
 }

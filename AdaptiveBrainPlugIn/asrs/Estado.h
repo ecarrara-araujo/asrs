@@ -11,6 +11,10 @@ class Estado
 {
 
 public:
+	Estado(int iCodEstado,int iRobotPlan);
+	
+	static Estado* sm_pWorkInstance;
+
 	int        getCodEstado()                {return m_iCodEstado;};
 	int        getRobotPlan()                {return m_iRobotPlan;};
 	bool       wasRefreshed()                {return m_bWasRefreshed;};
@@ -18,13 +22,6 @@ public:
 
 	static int refreshStateWrapper(void *NotUsed, int argc, char **argv, char **azColName);
 	static int (*pRefreshState)(void *NotUsed, int argc, char **argv, char **azColName);
-
-	static Estado* getInstance()
-	{
-		if(!sm_pInstance)
-			sm_pInstance = new Estado(0,0);
-		return sm_pInstance;
-	};
 
 	char*         getCodEstadoAsCharP()
 	{
@@ -38,12 +35,7 @@ private:
 	int            m_iRobotPlan;
 	bool           m_bWasRefreshed;
 
-	static Estado* sm_pInstance;
-
-	int            refreshState(void *NotUsed, int argc, char **argv, char **azColName);
-
-protected:
-	Estado(int iCodEstado,int iRobotPlan);
+	int            refreshState(void *NotUsed, int argc, char **argv, char **azColName);	
 
 };
 #endif /* ESTADO_H_ */
