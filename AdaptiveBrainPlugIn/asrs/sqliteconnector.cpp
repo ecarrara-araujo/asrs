@@ -69,40 +69,40 @@ int SQLiteConnector::executarVoidQuery(const char *strQuery, int iValue)
 
 int SQLiteConnector::executarQuery(const char *strQuery, int (*callback) (void*,int,char**,char**), int iValue){
 
-	//Trace para mostrar a query executada
-	  FILE * pFile;
-	  pFile = fopen ( "C:\\QueriesRobos.txt" , "at" );
-	  fprintf(pFile, "robo %s: query \"%s\"\n", this->m_strNomeDB.c_str(), strQuery);
-	  //fputs(strQuery, pFile);
-	  //fputc('\n', pFile);
-	  //fwrite (strQuery , 1 ,strlen(strQuery) , pFile );
-	  //fwrite ("\n" , 1 ,1 , pFile );
+	////Trace para mostrar a query executada
+	  //FILE * pFile;
+	  //pFile = fopen ( "C:\\QueriesRobos.txt" , "at" );
+	  //fprintf(pFile, "robo %s: query \"%s\"\n", this->m_strNomeDB.c_str(), strQuery);
+	  ////fputs(strQuery, pFile);
+	  ////fputc('\n', pFile);
+	  ////fwrite (strQuery , 1 ,strlen(strQuery) , pFile );
+	  ////fwrite ("\n" , 1 ,1 , pFile );
 	  ////CLogging::print("ROBO: ",strQuery);
-	//Fim
+	////Fim
 
 	  sqlite3 *db = NULL;
 	  char *zErrMsg = NULL;
 	  int rc = 0;
 	  if( iValue !=3 ){
-	    fprintf(pFile, "Usage: %s DATABASE SQL-STATEMENT\n", iValue);
+	    //fprintf(pFile, "Usage: %s DATABASE SQL-STATEMENT\n", iValue);
 		rc = 1;
 		goto fim;
 	  }
 	  rc = sqlite3_open(this->m_strNomeDB.c_str(), &db);
 	  if( rc ){
-	    fprintf(pFile, "Can't open database: %s\n", sqlite3_errmsg(db));
+	    //fprintf(pFile, "Can't open database: %s\n", sqlite3_errmsg(db));
 	    rc = 1;
 	    goto fim;
 	  }
 
 	  if( sqlite3_exec(db, strQuery, callback, 0, &zErrMsg) != SQLITE_OK ){
-	    fprintf(pFile, "SQL error: %s\n", zErrMsg);
+	    //fprintf(pFile, "SQL error: %s\n", zErrMsg);
 	    sqlite3_free(zErrMsg);
 	    rc = 1;
 	  }
 fim:
 	if(db) sqlite3_close(db);
-	fclose (pFile);
+	//fclose (pFile);
 	return rc;
 }
 
