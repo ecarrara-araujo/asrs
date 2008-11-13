@@ -39,6 +39,7 @@
 # @define NUMBER_ROBOTS 5.                #Number of robots.
 @define FEROMONEOS_VALOR_MAX "03".
 @define FEROMONEOS_VALOR_MIN "01".
+@define TENTATIVAS_PARA_SE_PERDER 20.
 
 @define MOVIE_FILENAME "asrs_movies/simulation_15_09_06.avi".	#The file is saved in the breve directory.
 @define RECORD_VIDEO 0.                 #Value 0: not record video; Value 1: Record video (only valid for Breve 2.4)
