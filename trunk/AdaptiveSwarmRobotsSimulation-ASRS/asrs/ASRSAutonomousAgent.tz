@@ -12,7 +12,9 @@ basicAutonomousAgent : JasmineIII {
         feromoneos (string).                #ECa#Campo para manipulacao de feromoneos#
         feromoneos_max (string).            #RZ#String criada para enviar a mensagem para o brain
         calculo (int).                      #guarda o resultado da reducao dos feromoneos.
-        
+        ultimoFeromoneo (int).              #guarda o valor do último feromoneo reecebido para saber se esta na direção certa
+        iTentativas (int).                  #conta tentativas para encontrar feromoneos para saber se o robo se perdeu.
+        iToPerdido (int).					#Indica se o robo esta perdido ou não, para fazer a programação do StatusPlan 50
             
     
     #Constructor method
@@ -68,21 +70,40 @@ basicAutonomousAgent : JasmineIII {
         
         print "$myID: Plan: $statusPlan StatusComm2{7}: $statusComm2{7} InfoRegs{3}:$infoRegs1{3} InfoRegs2{0}:$infoRegs2{0}..".
         if(statusComm2{7}=="1"):{
-          statusPlan= adaptiveBrain get-robot-plan ReceivedMessage receivMessage1 InformationRegisters infoRegs1.
-          print "$myID: Mensagem Recebida1: $receivMessage1 Mensagem Recebida2: $receivMessage2 Registradores: $infoRegs1".
-          print "$myID: Statusplan que o Brain retornou= $statusPlan". 
+          if(statusMain{1}!=1):{# RZ Só passa para o Brain se nao tiver obstaculos para evitar que os robos fiquem parados quando houver colisão.
+            statusPlan= adaptiveBrain get-robot-plan ReceivedMessage receivMessage1 InformationRegisters infoRegs1.
+            print "$myID: Mensagem Recebida1: $receivMessage1 Mensagem Recebida2: $receivMessage2 Registradores: $infoRegs1".
+            print "$myID: Statusplan que o Brain retornou= $statusPlan". 
+          }
           return.
         }
         
+		#RZ - Incrementa tentativa caso o robo não receba mensagem para ver se ele se perde - INICIO
+		if(statusComm2{7}=="0" && infoRegs1{2}=="1"):{ 						#Verifica se o robo esta monitorando e se recebeu mensagem
+			print "$myID: Incrementando tentativa, pois estava monitorando e não recebeu mensagem".
+			iTentativas +=1.
+		}
+		if (iTentativas==TENTATIVAS_PARA_SE_PERDER):{
+			iTentativas=0.													#Zera tentativas, para a próxima vez que esse robo for monitorar
+			iToPerdido=1.													#Indica que está perdido para tratar no StatusPlan 50
+			infoRegs1{2}="0".												#Robo monitorando.
+			print "$myID: Me PERDI! InfoRegs= $infoRegs1".
+      statusPlan= adaptiveBrain get-robot-plan ReceivedMessage "00000000" InformationRegisters infoRegs1.  #Sempre deve retornar 50
+      print "myID: Retornou quando se perdeu: $statusPlan".
+			return.
+		    #Faz o robo se perder
+		}
+		#RZ - Incrementa tentativa caso o robo não receba mensagem para ver se ele se perde - FIM
+		
         if(infoRegs1{3}!="1"):{
           statusPlan= adaptiveBrain get-robot-plan ReceivedMessage "00000000" InformationRegisters infoRegs1.
-          #print "$myID: Plan: $statusPlan StatusComm2{7}: $statusComm2{7} InfoRegs{3}:$infoRegs1{3}.".
+          print "$myID: Plan: $statusPlan StatusComm2{7}: $statusComm2{7} InfoRegs{3}:$infoRegs1{3}.".
         }
         
     #This executes plans
     + to ExecutePlan:
 #------------------------------ Basic Plans, please do not change them ------------------------------#
-        print "$myID: Plan: $statusPlan.".
+        #print "$myID: Plan: $statusPlan.".
         if(statusPlan==0):{     #idle sleep mode    
             self stopRobot.
             return.
@@ -113,24 +134,31 @@ basicAutonomousAgent : JasmineIII {
             return.
         }
         if(statusPlan==6):{                             #collision avoiding state
+			#print "$myID: localSensors[2]>localSensors[6] => $localSensors[2] > $localSensors[6]".
             if(localSensors[2]>localSensors[6]):{       #Detect where the obstacle is farer.
+				#print "$myID: Vira, esquerda".
                 self Rotate direction LEFT degrees avoiding.
             }else{
+				#print "$myID: Vira direita".
                 self Rotate direction RIGHT degrees avoiding.
             }
             statusPlan=7.
             return.
         }
         if(statusPlan==7):{             #decision point in collision avoiding
+			#print "$myID: Incrementa erro: $errorState".
             errorState++.
+			#print "$myID: statusMain{6}=$statusMain{6}".
             if(statusMain{6}=="0"):{    #Robot has not finished rotation
                 return.
             }
+			#print "$myID: statusMain{1}=$statusMain{1}".
             if(statusMain{1}=="1"):{      #There is an obstacle
                 statusPlan=6.             #Collision avoiding
             }else{
                 statusPlan=3.             #Move
             }
+			#print "$myID: errorState>70 && askTouch==0 => ES: $errorState, AS: $askTouch".
             if(errorState>70 && askTouch==0):{  #Go backwards when too many collision and high touch value
                 self stopRobot.
                 askTouch=1.
@@ -228,7 +256,7 @@ basicAutonomousAgent : JasmineIII {
           infoRegs1{3} = "0".                                           #Seta flag de robo em movimento para 0  
           sendMessage1 = "00100000".                                    #mensagem de inicio de movimento (cm)
           send16 = 0.	                                                  #envia 8 bits
-          statusComm1[0] = 1.                                         #envia 1 vez
+          statusComm1[0] = 1.                                           #envia 1 vez
           statusComm2 = "01111110".	                                    #envia em todos os canais
           statusMain{7} = "1".                                          #habilita o recebimento de mensagens
           statusPlan = 2.                                               #plan interno de robo parado
@@ -236,6 +264,10 @@ basicAutonomousAgent : JasmineIII {
         }
         
         if(statusPlan==50):{ #Movendo-se
+          if(iToPerdido==1):{
+            iToPerdido=0.												# Reseta Flag para futuras verificações
+            self LED_play_otherColor color (1,1,0).  						#acende o led vermelho para identificar visualmente o monitoramento para longe do objeto
+          }
           infoRegs1{3} = "1".                                           #Seta flag de robo em movimento para 1
           #sendMessage1 = "00001100".                                    #mensagem de robo em movimento (rm)
           #send16 = 0.	                                                  #envia 8 bits
@@ -320,24 +352,58 @@ basicAutonomousAgent : JasmineIII {
           #A parte importante desse plano eh alterar o registrador de robo encontrado para ele voltar ao estado movendo-se (statusplan 50)
           #infoRegs1{7} = "1".                                           #Seta flag de robo encontrado
           sendMessage1 = "00001100".                                    #mensagem de robo em movimento (rm)
-          send16 = 0.	                                                  #envia 8 bits
-          statusComm1[0] = 1.	                                          #envia 1 vez
+          send16 = 0.	                                                #envia 8 bits
+          statusComm1[0] = 1.	                                        #envia 1 vez
           statusComm2 = "01111110".	                                    #envia em todos os canais
           statusMain{7} = "1".                                          #habilita o recebimento de mensagens
           statusPlan = 3.                                               #plan interno de movimentacao do robo
-          self SetVelocity velocity 2.		                        			#Muda a velocidade do robo para 2
-          self moveRobot distance 0.					                          #Move quando recebe uma mensagem
+          self SetVelocity velocity 2.		                        	#Muda a velocidade do robo para 2
+          self moveRobot distance 0.					                #Move quando recebe uma mensagem
           return.
           #RZ
         }
         
         if(statusPlan==100):{ #Monitorando em direção ao objeto
-          self LED_playG.                            #acende o led azul para identificar visualmente o monitoramento em direcao ao objeto
+          self LED_playG.                                               #acende o led verde para identificar visualmente o monitoramento em direcao ao objeto
+          infoRegs1{2} = "1".                                           #robo monitorando
+          infoRegs1{5} = "1".                                           #Feromoneo minimo encontrado
+          feromoneos = receivMessage1{6}.
+          feromoneos += receivMessage1{7}.
+		  calculo = feromoneos.
+		  feromoneos = calculo.
+		  if(feromoneos==ultimoFeromoneo):{
+			#iTentativas += 1.											#Incrementar tentativas
+			print "$myID: Ainda é o mesmo feromoneo, estou no caminho certo".
+		  }
+		  if (feromoneos<ultimoFeromoneo):{
+		    print "$myID: Feromoneo menor, estou monitorando em direção errada.".
+		  }
+		  if (feromoneos>ultimoFeromoneo):{
+		    print "$myID: Encontrei feromoneo maior, estou no caminho certo.".
+		  }
+		  ultimoFeromoneo = feromoneos.									#Marca o ultimo feromoneo recebido para saber a direção
+          statusComm2 = "01111110".	                                    #envia em todos os canais
+          statusMain{7} = "1".                                          #habilita o recebimento de mensagens
+          statusPlan = 3.                                               #plan interno de movimentacao do robo
+          self SetVelocity velocity 2.		                        	#Muda a velocidade do robo para 2
+          self moveRobot distance 0.					                #Move quando recebe uma mensagem
           return.
         }
         
         if(statusPlan==110):{ #Monitorando em direção oposta ao objeto
-          self LED_playR.                            #acende o led vermelho para identificar visualmente o monitoramento para longe do objeto
+          self LED_playR.                            					#acende o led vermelho para identificar visualmente o monitoramento para longe do objeto
+		  infoRegs1{2} = "1".                                           #robo monitorando
+          infoRegs1{5} = "1".                                           #Feromoneo minimo encontrado
+          feromoneos = receivMessage1{6}.
+          feromoneos += receivMessage1{7}.
+		  calculo = feromoneos.
+		  feromoneos = calculo.
+		  ultimoFeromoneo = feromoneos.									#Marca o ultimo feromoneo recebido para saber a direção
+          statusComm2 = "01111110".	                                    #envia em todos os canais
+          statusMain{7} = "1".                                          #habilita o recebimento de mensagens
+          statusPlan = 3.                                               #plan interno de movimentacao do robo
+          self SetVelocity velocity 2.		                        	#Muda a velocidade do robo para 1
+          self moveRobot distance 0.					                #Move quando recebe uma mensagem
           return.
         }
           
@@ -358,7 +424,7 @@ basicAutonomousAgent : JasmineIII {
     
     #Inicializando variaveis para nao haver sujeira na hora da comunicacao
         statusComm2{7} = "0".
-        #print "$myID: Setado para nao receber chamadas".
+        ##print "$myID: zera flag de mensagens mensagens".
     
         if(isStart!=1):{        #For do nothing before push key "b".
             return.
@@ -391,16 +457,16 @@ basicAutonomousAgent : JasmineIII {
             self ReadProximity.
         }
     #----------------------------- Communication part ----------------------------#
-        #print "$myID: Recebe Mensagem?: statusMain{7}:[$statusMain{7}]". 
+        ##print "$myID: Recebe Mensagem?: statusMain{7}:[$statusMain{7}]". 
         if ((statusMain{7})=="1"):{     #Listening Flag
             self ReceiveMessages.
         }
         if (statusComm1[0]>0):{       #Send when more than 1 time in register
             self SendMessages.   	
-            print "$myID: Enviando Mensagem: [$sendMessage1]".
+            ##print "$myID: Enviando Mensagem: [$sendMessage1]".
         }
         
-        infoRegs2{0} = "0".             #ECa#Resetando o flag de feromoneos disponiveis
+        #infoRegs2{0} = "0".             #ECa#Resetando o flag de feromoneos disponiveis
     #------------------------------ Planning part --------------------------------#
         self Planning.                  #Planning a Plan
     #----------------------------- Executing part --------------------------------#
@@ -484,6 +550,6 @@ basicAutonomousAgent : JasmineIII {
           {
             feromoneos = FEROMONEOS_VALOR_MIN.
           }
-          print "$myID: feromoneos calculados $feromoneos".
+          #print "$myID: feromoneos calculados $feromoneos".
           return.
 }
