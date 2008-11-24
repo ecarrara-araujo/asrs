@@ -11,6 +11,7 @@ basicAutonomousAgent : JasmineIII {
         infoRegs2 (string).                 #ECa#Registradores de estado#
         feromoneos (string).                #ECa#Campo para manipulacao de feromoneos#
         feromoneos_max (string).            #RZ#String criada para enviar a mensagem para o brain
+		lastMessage (string).				# RZ#String que guarda o valor da ultima mensagem, para poder passar para o Brain pelo menos uma vez a mensagem e ainda tratar as colisões
         calculo (int).                      #guarda o resultado da reducao dos feromoneos.
         ultimoFeromoneo (int).              #guarda o valor do último feromoneo reecebido para saber se esta na direção certa
         iTentativas (int).                  #conta tentativas para encontrar feromoneos para saber se o robo se perdeu.
@@ -68,12 +69,22 @@ basicAutonomousAgent : JasmineIII {
           infoRegs2{0}="0".
         }
         
-        print "$myID: Plan: $statusPlan StatusComm2{7}: $statusComm2{7} InfoRegs{3}:$infoRegs1{3} InfoRegs2{0}:$infoRegs2{0}..".
+        #print "$myID: Plan: $statusPlan StatusComm2{7}: $statusComm2{7} InfoRegs{3}:$infoRegs1{3} InfoRegs2{0}:$infoRegs2{0}.".
         if(statusComm2{7}=="1"):{
-          if(statusMain{1}!=1):{# RZ Só passa para o Brain se nao tiver obstaculos para evitar que os robos fiquem parados quando houver colisão.
+          if(statusMain{1}!=1 || lastMessage!=receivMessage1):{# RZ Só passa para o Brain se nao tiver obstaculos e a ultima mensagem for diferente da atual para evitar que os robos fiquem parados quando houver colisão.
             statusPlan= adaptiveBrain get-robot-plan ReceivedMessage receivMessage1 InformationRegisters infoRegs1.
-            print "$myID: Mensagem Recebida1: $receivMessage1 Mensagem Recebida2: $receivMessage2 Registradores: $infoRegs1".
+            print "$myID: Mensagem Recebida1: $receivMessage1 Mensagem Recebida2: $receivMessage2 Registradores: $infoRegs1 UltimaMensagem: $lastMessage".
             print "$myID: Statusplan que o Brain retornou= $statusPlan". 
+			# RX - Retirar quando arrumar o Brain - INICIO
+			#if(statusPlan==50 && infoRegs1=="00010110" && receivMessage1=="00011103"):{
+      #print "$myID: Alterei na mao pois o brain retornou errado.".
+			#	statusPlan=110.
+			#}
+			#  RZ - FIM
+			if(statusPlan==100||statusPlan==110):{
+				iTentativas=0.
+				print "$myID: Zerei tentativas, pois recebi mensagem".
+			}
           }
           return.
         }
@@ -88,8 +99,8 @@ basicAutonomousAgent : JasmineIII {
 			iToPerdido=1.													#Indica que está perdido para tratar no StatusPlan 50
 			infoRegs1{2}="0".												#Robo monitorando.
 			print "$myID: Me PERDI! InfoRegs= $infoRegs1".
-      statusPlan= adaptiveBrain get-robot-plan ReceivedMessage "00000000" InformationRegisters infoRegs1.  #Sempre deve retornar 50
-      print "myID: Retornou quando se perdeu: $statusPlan".
+			statusPlan= adaptiveBrain get-robot-plan ReceivedMessage "00000000" InformationRegisters infoRegs1.  #Sempre deve retornar 50
+			print "$myID: Retornou quando se perdeu: $statusPlan".
 			return.
 		    #Faz o robo se perder
 		}
@@ -97,7 +108,7 @@ basicAutonomousAgent : JasmineIII {
 		
         if(infoRegs1{3}!="1"):{
           statusPlan= adaptiveBrain get-robot-plan ReceivedMessage "00000000" InformationRegisters infoRegs1.
-          print "$myID: Plan: $statusPlan StatusComm2{7}: $statusComm2{7} InfoRegs{3}:$infoRegs1{3}.".
+          #print "$myID: Plan: $statusPlan StatusComm2{7}: $statusComm2{7} InfoRegs{3}:$infoRegs1{3}.".
         }
         
     #This executes plans
@@ -402,7 +413,7 @@ basicAutonomousAgent : JasmineIII {
           statusComm2 = "01111110".	                                    #envia em todos os canais
           statusMain{7} = "1".                                          #habilita o recebimento de mensagens
           statusPlan = 3.                                               #plan interno de movimentacao do robo
-          self SetVelocity velocity 2.		                        	#Muda a velocidade do robo para 1
+          self SetVelocity velocity 2.		                        	#Muda a velocidade do robo para 2
           self moveRobot distance 0.					                #Move quando recebe uma mensagem
           return.
         }
@@ -460,6 +471,8 @@ basicAutonomousAgent : JasmineIII {
         ##print "$myID: Recebe Mensagem?: statusMain{7}:[$statusMain{7}]". 
         if ((statusMain{7})=="1"):{     #Listening Flag
             self ReceiveMessages.
+			lastMessage=receivMessage1. # RZ#19/11/2008#Guarda a ultima mensagem recebida.
+			print "$myID: Recebi Mensagem: $receivMessage1".
         }
         if (statusComm1[0]>0):{       #Send when more than 1 time in register
             self SendMessages.   	
